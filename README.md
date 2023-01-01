@@ -64,11 +64,13 @@ let config =
     |> Configuration.add options "Section 1" "key" "test value 2"
     |> Configuration.add options "Section 2" "up" "down"
     |> Configuration.add options "Section 2" "beauty" "truth"
-
-let textOut = Configuration.toText (options.WithNameValueDelimiterRule(ColonDelimiter)) config
     
-printfn "%O\n" (Configuration.getMultiValues "Section 1" "key" config)
-printfn "%s" textOut```
+let keyValue = Configuration.getMultiValues "Section 1" "key" config
+printfn "%O\n" keyValue
+
+let textOut = Configuration.toText (options.WithNameValueDelimiterRule ColonDelimiter) config
+printfn "%s" textOut
+```
 
 Output:
 ```
