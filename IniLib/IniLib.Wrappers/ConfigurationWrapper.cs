@@ -1,7 +1,9 @@
 ﻿using Microsoft.FSharp.Collections;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace IniLib.Wrappers
 {
@@ -62,6 +64,34 @@ namespace IniLib.Wrappers
         public override string ToString()
         {
             return Configuration.toText(_options, _state);
+        }
+
+        /// <summary>
+        /// Writes the configuration to a file.
+        /// </summary>
+        /// <param name="path">The file path to write to.</param>
+        public void WriteToFile(string path)
+        {
+            Configuration.writeToFile(_options, path, _state);
+        }
+
+        /// <summary>
+        /// Writes the configuration to a stream writer.
+        /// </summary>
+        /// <param name="streamWriter">The stream writer to write to.</param>
+        public void WriteToStreamWriter(StreamWriter streamWriter)
+        {
+            Configuration.writeToStreamWriter(_options, streamWriter, _state);
+        }
+
+        /// <summary>
+        /// Writes the configuration to a stream.
+        /// </summary>
+        /// <param name="stream">The stream to write to.</param>
+        /// <param name="encoding">The encoding to output. Defaults to <see cref="System.Text.Encoding.UTF8"/></param>
+        public void WriteToStream(Stream stream, Encoding encoding)
+        {
+            Configuration.writeToStream(_options, encoding ?? Encoding.UTF8, stream, _state);
         }
 
         private void ReplaceState(Configuration.Configuration newState)

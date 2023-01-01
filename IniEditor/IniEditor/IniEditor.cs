@@ -665,7 +665,7 @@ namespace IniEditor
 
                 try
                 {
-                    Time("Parsed in {0}ms", () => _configuration = Configuration.fromStream(_options ?? Options.defaultOptions, stream));
+                    Time("Parsed in {0}ms", () => _configuration = Configuration.fromStreamReader(_options ?? Options.defaultOptions, stream));
                 }
                 catch (Exception e)
                 {
@@ -716,11 +716,7 @@ namespace IniEditor
                 }
             }
 
-            using (var f = new StreamWriter(_filePath, false, _fileEncoding))
-            {
-                f.Write(Configuration.toText(_options, _configuration));
-            }
-
+            Configuration.writeToFile(_options, _filePath, _configuration);
             _isChanged = false;
         }
 

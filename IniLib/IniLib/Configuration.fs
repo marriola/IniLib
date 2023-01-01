@@ -206,6 +206,21 @@ module Configuration =
         let newTree = convertNameValueDelimiters options tree
         Node.toText options newTree
 
+    /// Writes a configuration to a file.
+    let writeToFile options (path: string) config =
+        let streamWriter = new StreamWriter(path)
+        streamWriter.Write(toText options config)
+
+    /// Writes a configuration to a stream writer.
+    let writeToStreamWriter options (streamWriter: StreamWriter) config =
+        streamWriter.Write(toText options config)
+
+    /// Writes a configuration to a stream.
+    let writeToStream options (encoding: System.Text.Encoding) (stream: Stream) config =
+        let text = toText options config
+        let buffer = encoding.GetBytes(text)
+        stream.Write(buffer, 0, buffer.Length)
+
     /// The section keys of the configuration.
     let sections config =
         let (Configuration (_, dic)) = config
