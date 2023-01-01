@@ -100,6 +100,8 @@ Console.WriteLine(config["foo"]["bar"]);                              // 123
 Console.WriteLine(config["foo"].GetInt("bar"));                       // 123
 Console.WriteLine(config["foo"].GetFirstValue("bar"));                // test
 Console.WriteLine(string.Join(", ", config["foo"].GetValues("bar"))); // test, ABC, 123
+
+config.WriteToFile("settings.ini");
 ```
 
 ## Options

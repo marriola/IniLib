@@ -12,21 +12,26 @@ namespace IniLib.Wrappers
         private Options _options;
         private Configuration.Configuration _state;
 
+        private ConfigurationWrapper() { }
+
         /// <summary>
         /// Instantiates a new configuration.
         /// </summary>
-        /// <param name="options">The configuration options.</param>
-        public ConfigurationWrapper(Options options)
+        /// <param name="options">Optional. Overrides the default configuration options.</param>
+        /// <param name="configuration">Optional. A configuration.</param>
+        public ConfigurationWrapper(Options options = null, Configuration.Configuration configuration = null)
         {
-            _options = options;
-            _state = Configuration.empty;
+            _options = options ?? Options.defaultOptions;
+            _state = configuration ?? Configuration.empty;
         }
 
         /// <summary>
-        /// Instantiates a new configuration with the default options.
+        /// Instantiates a new configuration.
         /// </summary>
-        public ConfigurationWrapper()
-            : this(Options.defaultOptions)
+        /// <param name="configuration">Optional. A configuration.</param>
+        /// <param name="options">Optional. Overrides the default configuration options.</param>
+        public ConfigurationWrapper(Configuration.Configuration configuration = null, Options options = null)
+            : this(options, configuration)
         { }
 
         /// <summary>
@@ -37,6 +42,50 @@ namespace IniLib.Wrappers
         public KeyMapWrapper this[string section]
         {
             get => new KeyMapWrapper(_options, _state, section, Configuration.tryGetSection(section, _state)?.Value.Item1, this.ReplaceState);
+        }
+
+        /// <summary>
+        /// Reads a configuration file from a string.
+        /// </summary>
+        /// <param name="text">The text of a configuration file.</param>
+        /// <param name="options">Optional. The options to use to read the configuration file.</param>
+        /// <returns>A new ConfigurationWrapper of the file.</returns>
+        public static ConfigurationWrapper FromText(string text, Options options = null)
+        {
+            return new ConfigurationWrapper(options, Configuration.fromText(options, text));
+        }
+
+        /// <summary>
+        /// Reads a configuration file from a file.
+        /// </summary>
+        /// <param name="path">A path to configuration file.</param>
+        /// <param name="options">Optional. The options to use to read the configuration file.</param>
+        /// <returns>A new ConfigurationWrapper of the file.</returns>
+        public static ConfigurationWrapper FromFile(string path, Options options = null)
+        {
+            return new ConfigurationWrapper(options, Configuration.fromFile(options, path));
+        }
+
+        /// <summary>
+        /// Reads a configuration file from a stream.
+        /// </summary>
+        /// <param name="stream">A configuration file stream.</param>
+        /// <param name="options">Optional. The options to use to read the configuration file.</param>
+        /// <returns>A new ConfigurationWrapper of the file.</returns>
+        public static ConfigurationWrapper FromStream(Stream stream, Options options = null)
+        {
+            return new ConfigurationWrapper(options, Configuration.fromStream(options, stream));
+        }
+
+        /// <summary>
+        /// Reads a configuration file from a stream reader.
+        /// </summary>
+        /// <param name="streamReader">A configuration file stream reader.</param>
+        /// <param name="options">Optional. The options to use to read the configuration file.</param>
+        /// <returns>A new ConfigurationWrapper of the file.</returns>
+        public static ConfigurationWrapper FromStreamReader(StreamReader streamReader, Options options = null)
+        {
+            return new ConfigurationWrapper(options, Configuration.fromStreamReader(options, streamReader));
         }
 
         /// <summary>
@@ -70,18 +119,18 @@ namespace IniLib.Wrappers
         /// Writes the configuration to a file.
         /// </summary>
         /// <param name="path">The file path to write to.</param>
-        public void WriteToFile(string path)
+        public void WriteToFile(string path, Options options = null)
         {
-            Configuration.writeToFile(_options, path, _state);
+            Configuration.writeToFile(options ?? _options, path, _state);
         }
 
         /// <summary>
         /// Writes the configuration to a stream writer.
         /// </summary>
         /// <param name="streamWriter">The stream writer to write to.</param>
-        public void WriteToStreamWriter(StreamWriter streamWriter)
+        public void WriteToStreamWriter(StreamWriter streamWriter, Options options = null)
         {
-            Configuration.writeToStreamWriter(_options, streamWriter, _state);
+            Configuration.writeToStreamWriter(options ?? _options, streamWriter, _state);
         }
 
         /// <summary>
@@ -89,9 +138,9 @@ namespace IniLib.Wrappers
         /// </summary>
         /// <param name="stream">The stream to write to.</param>
         /// <param name="encoding">The encoding to output. Defaults to <see cref="System.Text.Encoding.UTF8"/></param>
-        public void WriteToStream(Stream stream, Encoding encoding)
+        public void WriteToStream(Stream stream, Encoding encoding, Options options = null)
         {
-            Configuration.writeToStream(_options, encoding ?? Encoding.UTF8, stream, _state);
+            Configuration.writeToStream(options ?? _options, encoding ?? Encoding.UTF8, stream, _state);
         }
 
         private void ReplaceState(Configuration.Configuration newState)

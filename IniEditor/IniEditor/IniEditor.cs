@@ -717,6 +717,7 @@ namespace IniEditor
             }
 
             Configuration.writeToFile(_options, _filePath, _configuration);
+            LoadConfigurationText();
             _isChanged = false;
         }
 
