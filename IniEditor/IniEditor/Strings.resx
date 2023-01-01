@@ -1,0 +1,240 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AllowDuplicateSections" xml:space="preserve">
+    <value>Allow duplicate sections</value>
+  </data>
+  <data name="AllowGlobalProperties" xml:space="preserve">
+    <value>Allow global properties</value>
+  </data>
+  <data name="BothSides" xml:space="preserve">
+    <value>Space on both sides of delimiter</value>
+  </data>
+  <data name="ColonDelimiter" xml:space="preserve">
+    <value>Colon delimiter (:)</value>
+  </data>
+  <data name="CommentRule" xml:space="preserve">
+    <value>Comments</value>
+  </data>
+  <data name="CrLfNewline" xml:space="preserve">
+    <value>CRLF newline</value>
+  </data>
+  <data name="DefaultEnvironmentNewline" xml:space="preserve">
+    <value>Default environment newline</value>
+  </data>
+  <data name="DisallowDuplicateKeys" xml:space="preserve">
+    <value>Disallow duplicate keys</value>
+  </data>
+  <data name="DisallowDuplicateSections" xml:space="preserve">
+    <value>Disallow duplicate sections</value>
+  </data>
+  <data name="DisallowGlobalProperties" xml:space="preserve">
+    <value>Disallow global properties</value>
+  </data>
+  <data name="DuplicateKeyAddsValue" xml:space="preserve">
+    <value>Allow multivalue keys</value>
+  </data>
+  <data name="DuplicateKeyReplacesValue" xml:space="preserve">
+    <value>Duplicate key replaces value</value>
+  </data>
+  <data name="DuplicateKeyRule" xml:space="preserve">
+    <value>Duplicate key rule</value>
+  </data>
+  <data name="DuplicateSectionRule" xml:space="preserve">
+    <value>Duplicate section rule</value>
+  </data>
+  <data name="EqualsDelimiter" xml:space="preserve">
+    <value>Equals delimiter (=)</value>
+  </data>
+  <data name="EqualsOrColonDelimiter" xml:space="preserve">
+    <value>Equals or colon delimiter (=, :)</value>
+  </data>
+  <data name="EscapeSequenceRule" xml:space="preserve">
+    <value>Escape sequences</value>
+  </data>
+  <data name="GlobalPropertiesRule" xml:space="preserve">
+    <value>Global properties</value>
+  </data>
+  <data name="HashAndSemicolonComments" xml:space="preserve">
+    <value>Hash and semicolon comments (#, ;)</value>
+  </data>
+  <data name="HashComments" xml:space="preserve">
+    <value>Hash comments (#)</value>
+  </data>
+  <data name="IgnoreEscapeSequences" xml:space="preserve">
+    <value>Ignore escape sequences</value>
+  </data>
+  <data name="IgnoreQuotation" xml:space="preserve">
+    <value>Ignore quotation</value>
+  </data>
+  <data name="LeftOnly" xml:space="preserve">
+    <value>Space on left of delimiter</value>
+  </data>
+  <data name="LfNewline" xml:space="preserve">
+    <value>LF newline</value>
+  </data>
+  <data name="MergeDuplicateIntoOriginal" xml:space="preserve">
+    <value>Merge duplicate section into original</value>
+  </data>
+  <data name="MergeOriginalIntoDuplicate" xml:space="preserve">
+    <value>Merge original section into duplicate</value>
+  </data>
+  <data name="NameValueDelimiterPreferenceRule" xml:space="preserve">
+    <value>Name value delimiter preference rule</value>
+  </data>
+  <data name="NameValueDelimiterRule" xml:space="preserve">
+    <value>Name-value delimiter</value>
+  </data>
+  <data name="NameValueDelimiterSpacingRule" xml:space="preserve">
+    <value>Name value delimiter spacing rule</value>
+  </data>
+  <data name="NewlineRule" xml:space="preserve">
+    <value>Newline</value>
+  </data>
+  <data name="NoDelimiter" xml:space="preserve">
+    <value>No delimiter</value>
+  </data>
+  <data name="PreferColonDelimiter" xml:space="preserve">
+    <value>Prefer colon delimiter (:)</value>
+  </data>
+  <data name="PreferEqualsDelimiter" xml:space="preserve">
+    <value>Prefer equals delimiter (=)</value>
+  </data>
+  <data name="PreferNoDelimiter" xml:space="preserve">
+    <value>Prefer no delimiter</value>
+  </data>
+  <data name="QuotationRule" xml:space="preserve">
+    <value>Quotation</value>
+  </data>
+  <data name="RightOnly" xml:space="preserve">
+    <value>Space on right of delimiter</value>
+  </data>
+  <data name="SemicolonComments" xml:space="preserve">
+    <value>Semicolon comments (;)</value>
+  </data>
+  <data name="UseEscapeSequences" xml:space="preserve">
+    <value>Use escape sequences</value>
+  </data>
+  <data name="UseEscapeSequencesAndLineContinuation" xml:space="preserve">
+    <value>Use escape sequences and line continuation</value>
+  </data>
+  <data name="UseQuotation" xml:space="preserve">
+    <value>Use quotation</value>
+  </data>
+</root>

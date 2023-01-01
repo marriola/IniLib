@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Copyright></Copyright>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>IniLib</Title>
+    <Authors>Matt Arriola</Authors>
+    <Company />
+    <Description>A non-destructive library for INI files</Description>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OtherFlags>--langversion:preview</OtherFlags>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OtherFlags>--langversion:preview</OtherFlags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.fs" />
+    <Compile Include="Options.fs" />
+    <Compile Include="Token.fs" />
+    <Compile Include="Lexer.fs" />
+    <Compile Include="Node.fs" />
+    <Compile Include="NodeBuilder.fs" />
+    <Compile Include="Parser.fs" />
+    <Compile Include="Configuration.fs" />
+    <Compile Include="MainShim.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharpPlus" Version="1.3.2" />
+  </ItemGroup>
+
+</Project>
