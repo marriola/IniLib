@@ -5,7 +5,7 @@ type Options =
       duplicateKeyRule: DuplicateKeyRule
       duplicateSectionRule: DuplicateSectionRule
       escapeSequenceRule: EscapeSequenceRule
-      globalPropertiesRule: GlobalPropertiesRule
+      globalKeysRule: GlobalKeysRule
       nameValueDelimiterRule: NameValueDelimiterRule
       nameValueDelimiterPreferenceRule: NameValueDelimiterPreferenceRule
       nameValueDelimiterSpacingRule: NameValueDelimiterSpacingRule
@@ -17,7 +17,7 @@ with
           duplicateKeyRule = DuplicateKeyReplacesValue
           duplicateSectionRule = DisallowDuplicateSections
           escapeSequenceRule = IgnoreEscapeSequences
-          globalPropertiesRule = DisallowGlobalProperties
+          globalKeysRule = DisallowGlobalKeys
           nameValueDelimiterRule = EqualsDelimiter
           nameValueDelimiterPreferenceRule = NameValueDelimiterPreferenceRule.DefaultPreferenceRule EqualsDelimiter
           nameValueDelimiterSpacingRule = NameValueDelimiterSpacingRule.DefaultSpacingRule EqualsDelimiter
@@ -32,7 +32,7 @@ with
 
     member this.WithEscapeSequenceRule escapeSequenceRule = { this with escapeSequenceRule = escapeSequenceRule }
 
-    member this.WithGlobalPropertiesRule globalPropertiesRule = { this with globalPropertiesRule = globalPropertiesRule }
+    member this.WithGlobalKeysRule globalKeysRule = { this with globalKeysRule = globalKeysRule }
 
     member this.WithNameValueDelimiterRule nameValueDelimiterRule =
         { this with nameValueDelimiterRule = nameValueDelimiterRule
@@ -55,7 +55,7 @@ with
 
     static member withEscapeSequenceRule escapeSequenceRule options = { options with escapeSequenceRule = escapeSequenceRule }
 
-    static member withGlobalPropertiesRule globalPropertiesRule options = { options with globalPropertiesRule = globalPropertiesRule }
+    static member withGlobalKeysRule globalKeysRule options = { options with globalKeysRule = globalKeysRule }
 
     static member withNameValueDelimiterRule nameValueDelimiterRule options =
         { options with nameValueDelimiterRule = nameValueDelimiterRule
@@ -88,9 +88,9 @@ and EscapeSequenceRule =
     | IgnoreEscapeSequences
     | UseEscapeSequences
     | UseEscapeSequencesAndLineContinuation
-and GlobalPropertiesRule =
-    | DisallowGlobalProperties
-    | AllowGlobalProperties
+and GlobalKeysRule =
+    | DisallowGlobalKeys
+    | AllowGlobalKeys
 and NameValueDelimiterRule =
     | EqualsDelimiter
     | ColonDelimiter

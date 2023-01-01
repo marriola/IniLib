@@ -70,11 +70,11 @@ namespace IniEditor {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Allow global properties.
+        ///   Looks up a localized string similar to Allow global keys.
         /// </summary>
-        internal static string AllowGlobalProperties {
+        internal static string AllowGlobalKeys {
             get {
-                return ResourceManager.GetString("AllowGlobalProperties", resourceCulture);
+                return ResourceManager.GetString("AllowGlobalKeys", resourceCulture);
             }
         }
         
@@ -142,11 +142,11 @@ namespace IniEditor {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Disallow global properties.
+        ///   Looks up a localized string similar to Disallow global keys.
         /// </summary>
-        internal static string DisallowGlobalProperties {
+        internal static string DisallowGlobalKeys {
             get {
-                return ResourceManager.GetString("DisallowGlobalProperties", resourceCulture);
+                return ResourceManager.GetString("DisallowGlobalKeys", resourceCulture);
             }
         }
         
@@ -214,11 +214,11 @@ namespace IniEditor {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Global properties.
+        ///   Looks up a localized string similar to Global keys rule.
         /// </summary>
-        internal static string GlobalPropertiesRule {
+        internal static string GlobalKeysRule {
             get {
-                return ResourceManager.GetString("GlobalPropertiesRule", resourceCulture);
+                return ResourceManager.GetString("GlobalKeysRule", resourceCulture);
             }
         }
         

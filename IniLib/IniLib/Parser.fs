@@ -428,7 +428,7 @@ let parse (options: Options) tokens =
             parse' (Set.add sectionName parsedSections) output tokens
 
         // Property outside section (i.e. global property)
-        | (Text _)::_ when options.globalPropertiesRule = AllowGlobalProperties ->
+        | (Text _)::_ when options.globalKeysRule = AllowGlobalKeys ->
             let keys, tokens = parseKeys Set.empty [] tokens
             let section = SectionNode ("<global>", keys)
             parse' parsedSections (section :: output) tokens

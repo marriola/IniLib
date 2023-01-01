@@ -45,10 +45,10 @@ namespace IniEditor
                 Strings.UseEscapeSequencesAndLineContinuation
             },
 
-            [Strings.GlobalPropertiesRule] = new()
+            [Strings.GlobalKeysRule] = new()
             {
-                Strings.DisallowGlobalProperties,
-                Strings.AllowGlobalProperties
+                Strings.DisallowGlobalKeys,
+                Strings.AllowGlobalKeys
             },
 
             [Strings.NameValueDelimiterRule] = new()
@@ -151,10 +151,10 @@ namespace IniEditor
             [Strings.CrLfNewline] = NewlineRule.CrLfNewline
         };
 
-        private readonly Dictionary<string, GlobalPropertiesRule> _textToGlobalPropertiesRule = new()
+        private readonly Dictionary<string, GlobalKeysRule> _textToGlobalKeysRule = new()
         {
-            [Strings.DisallowGlobalProperties] = GlobalPropertiesRule.DisallowGlobalProperties,
-            [Strings.AllowGlobalProperties] = GlobalPropertiesRule.AllowGlobalProperties
+            [Strings.DisallowGlobalKeys] = GlobalKeysRule.DisallowGlobalKeys,
+            [Strings.AllowGlobalKeys] = GlobalKeysRule.AllowGlobalKeys
         };
 
         private readonly Dictionary<NameValueDelimiterRule, string> _delimiterRuleToText = new()
@@ -581,7 +581,7 @@ namespace IniEditor
                 duplicateKeyRule: _textToDuplicateKeyRule[GetOptionText(Strings.DuplicateKeyRule)],
                 duplicateSectionRule: _textToDuplicateSectionRule[GetOptionText(Strings.DuplicateSectionRule)],
                 escapeSequenceRule: _textToEscapeSequenceRule[GetOptionText(Strings.EscapeSequenceRule)],
-                globalPropertiesRule: _textToGlobalPropertiesRule[GetOptionText(Strings.GlobalPropertiesRule)],
+                globalKeysRule: _textToGlobalKeysRule[GetOptionText(Strings.GlobalKeysRule)],
                 nameValueDelimiterRule: _textToDelimiterRule[GetOptionText(Strings.NameValueDelimiterRule)],
                 nameValueDelimiterPreferenceRule: _textToDelimiterPreferenceRule[GetOptionText(Strings.NameValueDelimiterPreferenceRule)],
                 nameValueDelimiterSpacingRule: _textToDelimiterSpacingRule[GetOptionText(Strings.NameValueDelimiterSpacingRule)],

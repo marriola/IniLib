@@ -120,8 +120,8 @@
   <data name="AllowDuplicateSections" xml:space="preserve">
     <value>Allow duplicate sections</value>
   </data>
-  <data name="AllowGlobalProperties" xml:space="preserve">
-    <value>Allow global properties</value>
+  <data name="AllowGlobalKeys" xml:space="preserve">
+    <value>Allow global keys</value>
   </data>
   <data name="BothSides" xml:space="preserve">
     <value>Space on both sides of delimiter</value>
@@ -144,8 +144,8 @@
   <data name="DisallowDuplicateSections" xml:space="preserve">
     <value>Disallow duplicate sections</value>
   </data>
-  <data name="DisallowGlobalProperties" xml:space="preserve">
-    <value>Disallow global properties</value>
+  <data name="DisallowGlobalKeys" xml:space="preserve">
+    <value>Disallow global keys</value>
   </data>
   <data name="DuplicateKeyAddsValue" xml:space="preserve">
     <value>Allow multivalue keys</value>
@@ -168,8 +168,8 @@
   <data name="EscapeSequenceRule" xml:space="preserve">
     <value>Escape sequences</value>
   </data>
-  <data name="GlobalPropertiesRule" xml:space="preserve">
-    <value>Global properties</value>
+  <data name="GlobalKeysRule" xml:space="preserve">
+    <value>Global keys rule</value>
   </data>
   <data name="HashAndSemicolonComments" xml:space="preserve">
     <value>Hash and semicolon comments (#, ;)</value>

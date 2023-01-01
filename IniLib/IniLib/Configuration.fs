@@ -131,7 +131,7 @@ module Configuration =
 
     /// Parses a configuration from a stream.
     let fromStream options (stream: Stream) =
-        let reader = new StreamReader(stream)
+        use reader = new StreamReader(stream)
         fromText options (reader.ReadToEnd())
 
     /// Parses a configuration from a stream reader.
@@ -208,7 +208,7 @@ module Configuration =
 
     /// Writes a configuration to a file.
     let writeToFile options (path: string) config =
-        let streamWriter = new StreamWriter(path)
+        use streamWriter = new StreamWriter(path)
         streamWriter.Write(toText options config)
 
     /// Writes a configuration to a stream writer.

@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Options\GlobalPropertiesRuleTests.fs" />
+    <Compile Include="Options\GlobalKeysRuleTests.fs" />
     <Compile Include="Options\NameValueDelimiterRuleTests.fs" />
     <Compile Include="Options\EscapeSequenceRuleTests.fs" />
     <Compile Include="Options\QuotationRuleTests.fs" />

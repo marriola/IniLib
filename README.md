@@ -129,7 +129,7 @@ var options = Options.defaultOptions
 | DuplicateKeyRule                 | DuplicateKeyReplacesValue | Allows duplicate keys. Additional keys parsed with the same name replace the old value of the key, but are preserved when output to text. |
 | DuplicateSectionRule             | DisallowDuplicateSections | Disallows duplicate sections and throws an exception when the parser encounters one.                                                      |
 | EscapeSequenceRule               | IgnoreEscapeSequences     | Escape sequences are ignored and parsed as literal text.                                                                                  |
-| GlobalPropertiesRule             | DisallowGlobalProperties  | Disallows global keys and throws an exception when a key is encountered outside of a section.                                             |
+| GlobalKeysRule                   | DisallowGlobalKeys        | Disallows global keys and throws an exception when a key is encountered outside of a section.                                             |
 | NameValueDelimiterRule           | EqualsDelimiter           | Accepts a `=` token to assign a value to a key.                                                                                           |
 | NameValueDelimiterPreferenceRule | PreferEqualsDelimiter     | Writes the equal delimiter to text between keys and values.                                                                               |
 | NameValueDelimiterSpacingRule    | BothSides                 | A single space is added on either side of the delimiter.                                                                                  |
@@ -177,14 +177,14 @@ var options = Options.defaultOptions
 | UseEscapeSequences                    | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:`, `\&blank;` and `\xHHHH`                                             |
 | UseEscapeSequencesAndLineContinuation | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:`, `\&blank;` and `\xHHHH`, as well as the line continuation token `\` |
 
-### GlobalPropertiesRule
+### GlobalKeysRule
 
-`GlobalPropertiesRule` controls parser behavior when keys are encountered outside a section.
+`GlobalKeysRule` controls parser behavior when keys are encountered outside a section.
 
-| Rule option              | Description                                                                                         |
-| ------------------------ | --------------------------------------------------------------------------------------------------- |
-| DisallowGlobalProperties | Disallows global keys and throws an exception when a key is encountered outside of a section.       |
-| AllowGlobalProperties    | Allows keys to occur outside of a section. They can be accessed through the section named `global`. |
+| Rule option         | Description                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| DisallowGlobalKeys  | Disallows global keys and throws an exception when a key is encountered outside of a section.         |
+| AllowGlobalKeys     | Allows keys to occur outside of a section. They can be accessed through the section named `<global>`. |
 
 ### NameValueDelimiterRule
 
@@ -231,7 +231,7 @@ Additionally, when using one of the `Options.with...` functions to change this o
 
 `NewlineRule` determines which type of newline is written when the configuration is converted to text.
 
-| Rule option               | Description                          |
+| Rule option               | Description                                  |
 | ------------------------- | -------------------------------------------- |
 | DefaultEnvironmentNewline | Writes `System.Environment.NewLine` to text. |
 | LfNewLine                 | Writes `\n` to text.                         |
