@@ -195,7 +195,9 @@ namespace IniEditor
         private Dictionary<string, CommonFileDialogComboBox> _optionToComboBox = new();
         private Dictionary<string, int> _optionToSelectedIndex = new();
 
-        private string? _filePath;
+        private const string DEFAULT_FILE_PATH = "untitled.ini";
+
+        private string _filePath = DEFAULT_FILE_PATH;
         private Encoding _fileEncoding = Encoding.UTF8;
         private Options _options = Options.defaultOptions;
         private Configuration.Configuration _configuration = Configuration.empty;
@@ -338,6 +340,7 @@ namespace IniEditor
             _isChanged = true;
             _isNewNode = false;
             LoadConfigurationText();
+            UpdateTitle();
             SelectConfigurationNode(highlightedNode);
         }
 
@@ -601,7 +604,7 @@ namespace IniEditor
             _mainNode = new TreeNode { Text = "Untitled", Name = "root" };
             _mainNode.ContextMenuStrip = topContextMenuStrip;
             tvKeys.Nodes.Add(_mainNode);
-            _filePath = null;
+            _filePath = DEFAULT_FILE_PATH;
             _fileEncoding = Encoding.Default;
             _isChanged = false;
             UpdateTitle();
@@ -622,8 +625,9 @@ namespace IniEditor
 
             if (!string.IsNullOrEmpty(_filePath))
             {
+                var changedIndicator = _isChanged ? "*" : string.Empty;
                 var fileName = Path.GetFileName(_filePath);
-                Text += $" - {fileName}";
+                Text += $" - {fileName}{changedIndicator}";
                 _mainNode.Text = fileName;
             }
         }
@@ -715,13 +719,13 @@ namespace IniEditor
                     SaveFileDialogOptions();
                     _options = GetOptions();
                     _filePath = saveFile.FileName;
-                    UpdateTitle();
                 }
             }
 
             Configuration.writeToFile(_options, _filePath, _configuration);
             LoadConfigurationText();
             _isChanged = false;
+            UpdateTitle();
         }
 
         private void SelectConfigurationNode(Node? node)
