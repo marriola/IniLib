@@ -130,7 +130,12 @@ module Configuration =
         Configuration (tree, toMap options tree)
 
     /// Parses a configuration from a stream.
-    let fromStream options (reader: StreamReader) =
+    let fromStream options (stream: Stream) =
+        let reader = new StreamReader(stream)
+        fromText options (reader.ReadToEnd())
+
+    /// Parses a configuration from a stream reader.
+    let fromStreamReader options (reader: StreamReader) =
         fromText options (reader.ReadToEnd())
 
     /// Parses a configuration from a file.
