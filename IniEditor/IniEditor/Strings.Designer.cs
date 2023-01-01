@@ -151,7 +151,7 @@ namespace IniEditor {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Allow multivalue keys.
+        ///   Looks up a localized string similar to Duplicate key adds value.
         /// </summary>
         internal static string DuplicateKeyAddsValue {
             get {

@@ -148,7 +148,7 @@
     <value>Disallow global keys</value>
   </data>
   <data name="DuplicateKeyAddsValue" xml:space="preserve">
-    <value>Allow multivalue keys</value>
+    <value>Duplicate key adds value</value>
   </data>
   <data name="DuplicateKeyReplacesValue" xml:space="preserve">
     <value>Duplicate key replaces value</value>
