@@ -103,6 +103,31 @@ let parse (options: Options) tokens =
             | ColonDelimiter -> "':'"
             | EqualsOrColonDelimiter -> "'=' or ':'"
             | NoDelimiter -> "value"
+
+        let escapeCodeToCharacter = dict [
+            '0', char 0
+            'a', char 7
+            'b', char 8
+            'f', char 12
+            'n', char 10
+            'r', char 13
+            't', char 9
+            'v', char 11
+            '\\', '\\'
+            '\'', '\''
+            '"', '"'
+            '#', '#'
+            ':', ':'
+            ' ', ' '
+        ]
+
+        let (|EscapedText|_|) token =
+            match token with
+            | EscapedChar (c, line, column) -> Some (string escapeCodeToCharacter[c], line, column)
+            | EscapedUnicodeChar (codepoint, line, column) -> Some (codepoint |> char |> string, line, column)
+            | LineContinuation (line, column) -> Some (options.newlineRule.toText(), line, column)
+            | _ -> None
+
         let rec parseKeyName name consumedTokens tokens =
             match name, tokens with
             // Premature newline
@@ -118,6 +143,10 @@ let parse (options: Options) tokens =
             | None, (Text (t, _, _) as textToken)::rest ->
                 parseKeyName (Some t) (TokenNode textToken :: consumedTokens) rest
 
+            // Set the name with escaped text
+            | None, (EscapedText (text, _, _) as token::rest) ->
+                parseKeyName (Some text) (TokenNode token :: consumedTokens) rest
+
             // When no delimiter: whitespace terminates key name
             | (Some name), (Whitespace _)::_ when options.nameValueDelimiterRule = NameValueDelimiterRule.NoDelimiter ->
                 let name = name.Trim()
@@ -129,6 +158,11 @@ let parse (options: Options) tokens =
             | (Some name1), (Whitespace (name2, _, _) as textToken)::rest ->
                 let value = name1 + name2
                 parseKeyName (Some value) (TokenNode textToken :: consumedTokens) rest
+
+            // Append escaped text to already read name
+            | (Some name), (EscapedText (text, _, _) as token::rest) ->
+                let value = name + text
+                parseKeyName (Some value) (TokenNode token :: consumedTokens) rest
             
             // Assignment token - we're done
             | (Some name), (Assignment _)::_ ->
@@ -152,29 +186,6 @@ let parse (options: Options) tokens =
             | _, token::_ -> failwithf "Expected assignment, got %O at %O" token (Token.position token)
             | _ -> failwithf "Expected %s, got end of input" (expected ())
         
-        let escapeCodeToCharacter = dict [
-            '0', char 0
-            'a', char 7
-            'b', char 8
-            'f', char 12
-            'n', char 10
-            'r', char 13
-            't', char 9
-            'v', char 11
-            '\\', '\\'
-            '\'', '\''
-            '"', '"'
-            '#', '#'
-            ':', ':'
-        ]
-
-        let (|EscapedText|_|) token =
-            match token with
-            | EscapedChar (c, line, column) -> Some (string escapeCodeToCharacter[c], line, column)
-            | EscapedUnicodeChar (codepoint, line, column) -> Some (codepoint |> char |> string, line, column)
-            | LineContinuation (line, column) -> Some (options.newlineRule.toText(), line, column)
-            | _ -> None
-
         let rec parseKeyValue value quote consumedTokens keyName input =
             /// Consume a text token and continue if there is more input on the line, or produce a KeyValueNode
             let inline matchValueText (text: string) quote textToken rest =

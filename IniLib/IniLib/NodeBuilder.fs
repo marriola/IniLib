@@ -1,8 +1,6 @@
-﻿module NodeBuilder
+﻿module IniLib.NodeBuilder
 
 open System.Text.RegularExpressions
-
-open IniLib
 
 let private RE_LEADING_OR_TRAILING_WHITESPACE = new Regex(["\\s+.*"; ".*?\\s+"; "\\s+.*?\\s+"] |> String.concat "|")
 
