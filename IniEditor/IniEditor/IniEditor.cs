@@ -171,7 +171,8 @@ namespace IniEditor
         {
             [NameValueDelimiterSpacingRule.BothSides] = Strings.BothSides,
             [NameValueDelimiterSpacingRule.LeftOnly] = Strings.LeftOnly,
-            [NameValueDelimiterSpacingRule.RightOnly] = Strings.RightOnly
+            [NameValueDelimiterSpacingRule.RightOnly] = Strings.RightOnly,
+            [NameValueDelimiterSpacingRule.NoSpacing] = Strings.NoSpacing
         };
 
         private readonly Dictionary<NameValueDelimiterPreferenceRule, string> _delimiterPreferenceRuleToText = new()
