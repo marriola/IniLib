@@ -138,8 +138,8 @@ var options = Options.defaultOptions
 | Rule option                           | Description                                                                                                                                                  |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | IgnoreEscapeSequences                 | Escape sequences are ignored and parsed as literal text.                                                                                                     |
-| UseEscapeSequences                    | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:` and `\xHHHH`                                             |
-| UseEscapeSequencesAndLineContinuation | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:` and `\xHHHH`, as well as the line continuation token `\` |
+| UseEscapeSequences                    | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:`, `\ ` and `\xHHHH`                                             |
+| UseEscapeSequencesAndLineContinuation | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:`, `\ ` and `\xHHHH`, as well as the line continuation token `\` |
 
 ### GlobalPropertiesRule
 
@@ -198,7 +198,7 @@ Additionally, when using one of the `Options.with...` functions to change this o
 | Rule option               | Description                          |
 | ------------------------- | -------------------------------------------- |
 | DefaultEnvironmentNewline | Writes `System.Environment.NewLine` to text. |
-| LfNewline                 | Writes `\n` to text.                         |
+| LfNewLine                 | Writes `\n` to text.                         |
 | CrLfNewline               | Writes `\r\n` to text.                       |
 
 ### QuotationRule
