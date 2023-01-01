@@ -210,6 +210,9 @@
   <data name="NoDelimiter" xml:space="preserve">
     <value>No delimiter</value>
   </data>
+  <data name="NoSpacing" xml:space="preserve">
+    <value>No spacing</value>
+  </data>
   <data name="PreferColonDelimiter" xml:space="preserve">
     <value>Prefer colon delimiter (:)</value>
   </data>

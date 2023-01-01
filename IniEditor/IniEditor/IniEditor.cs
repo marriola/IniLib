@@ -70,7 +70,8 @@ namespace IniEditor
             {
                 Strings.BothSides,
                 Strings.LeftOnly,
-                Strings.RightOnly
+                Strings.RightOnly,
+                Strings.NoSpacing
             },
 
             [Strings.NewlineRule] = new()
@@ -113,7 +114,8 @@ namespace IniEditor
         {
             [Strings.LeftOnly] = NameValueDelimiterSpacingRule.LeftOnly,
             [Strings.RightOnly] = NameValueDelimiterSpacingRule.RightOnly,
-            [Strings.BothSides] = NameValueDelimiterSpacingRule.BothSides
+            [Strings.BothSides] = NameValueDelimiterSpacingRule.BothSides,
+            [Strings.NoSpacing] = NameValueDelimiterSpacingRule.NoSpacing
         };
 
         private readonly Dictionary<string, DuplicateKeyRule> _textToDuplicateKeyRule = new()

@@ -340,6 +340,15 @@ namespace IniEditor {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No spacing.
+        /// </summary>
+        internal static string NoSpacing {
+            get {
+                return ResourceManager.GetString("NoSpacing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Prefer colon delimiter (:).
         /// </summary>
         internal static string PreferColonDelimiter {
