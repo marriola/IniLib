@@ -39,6 +39,10 @@ with
                     nameValueDelimiterPreferenceRule = NameValueDelimiterPreferenceRule.DefaultPreferenceRule nameValueDelimiterRule
                     nameValueDelimiterSpacingRule = NameValueDelimiterSpacingRule.DefaultSpacingRule nameValueDelimiterRule }
 
+    member this.WithNameValueDelimiterSpacingRule nameValueDelimiterSpacingRule = { this with nameValueDelimiterSpacingRule = nameValueDelimiterSpacingRule }
+
+    member this.WithNameValueDelimiterPreferenceRule nameValueDelimiterPreferenceRule = { this with nameValueDelimiterPreferenceRule = nameValueDelimiterPreferenceRule }
+
     member this.WithNewlineRule newlineType = { this with newlineRule = newlineType }
 
     member this.WithQuotationRule quotationType = { this with quotationRule = quotationType }
@@ -57,6 +61,10 @@ with
         { options with nameValueDelimiterRule = nameValueDelimiterRule
                        nameValueDelimiterPreferenceRule = NameValueDelimiterPreferenceRule.DefaultPreferenceRule nameValueDelimiterRule
                        nameValueDelimiterSpacingRule = NameValueDelimiterSpacingRule.DefaultSpacingRule nameValueDelimiterRule }
+
+    static member withNameValueDelimiterSpacingRule nameValueDelimiterSpacingRule options = { options with nameValueDelimiterSpacingRule = nameValueDelimiterSpacingRule }
+
+    static member withNameValueDelimiterPreferenceRule nameValueDelimiterPreferenceRule options = { options with nameValueDelimiterPreferenceRule = nameValueDelimiterPreferenceRule }
 
     static member withNewlineRule newlineType options = { options with newlineRule = newlineType }
 
@@ -102,6 +110,7 @@ and NameValueDelimiterSpacingRule =
     | BothSides
     | RightOnly
     | LeftOnly
+    | NoSpacing
 with
     static member DefaultSpacingRule = function
         | EqualsDelimiter -> BothSides

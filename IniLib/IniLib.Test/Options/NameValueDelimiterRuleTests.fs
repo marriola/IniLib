@@ -137,3 +137,21 @@ module NameValueDelimiterRuleTests =
             |> Configuration.toText options
 
         Assert.Equal(expected, actual)
+
+    [<Fact>]
+    let ``Allows custom spacing around delimiter`` () =
+        let options =
+            Options.defaultOptions
+            |> Options.withNameValueDelimiterRule EqualsDelimiter
+            |> Options.withNameValueDelimiterSpacingRule NoSpacing
+            |> Options.withNewlineRule LfNewline
+
+        let expected = "[Section 1]\n\
+                        foo=bar\n\
+                        \n"
+        let actual =
+            Configuration.empty
+            |> Configuration.add options "Section 1" "foo" "bar"
+            |> Configuration.toText options
+
+        Assert.Equal(expected, actual)

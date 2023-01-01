@@ -189,6 +189,7 @@ Additionally, when using one of the `Options.with...` functions to change this o
 | BothSides   | A single space is added on either side of the delimiter.         |
 | LeftOnly    | A single space is added on the left side of the delimiter only.  |
 | RightOnly   | A single space is added on the right side of the delimiter only. |
+| NoSpacing   | No space is inserted on either side of the delimiter.            |
 
 ### NewlineRule
 
@@ -197,7 +198,7 @@ Additionally, when using one of the `Options.with...` functions to change this o
 | Rule option               | Description                          |
 | ------------------------- | -------------------------------------------- |
 | DefaultEnvironmentNewline | Writes `System.Environment.NewLine` to text. |
-| LfNewLine                 | Writes `\n` to text.                         |
+| LfNewline                 | Writes `\n` to text.                         |
 | CrLfNewline               | Writes `\r\n` to text.                       |
 
 ### QuotationRule

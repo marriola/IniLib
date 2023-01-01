@@ -20,18 +20,18 @@ let keyValueText options value =
 let key options name value =
     let keyName name =
         let whitespace =
-            match options.nameValueDelimiterRule with
-            | ColonDelimiter -> []
-            | EqualsDelimiter
-            | NoDelimiter -> [ TriviaNode (Whitespace (" ", 0, 0)) ]
+            match options.nameValueDelimiterSpacingRule with
+            | LeftOnly
+            | BothSides -> [ TriviaNode (Whitespace (" ", 0, 0)) ]
+            | _ -> []
         KeyNameNode (name, [ ReplaceableTokenNode (Text (name, 0, 0)) ] @ whitespace)
 
     let keyValue value =
         let whitespace =
-            match options.nameValueDelimiterRule with
-            | NoDelimiter -> []
-            | EqualsDelimiter
-            | ColonDelimiter -> [TriviaNode (Whitespace (" ", 0, 0))]
+            match options.nameValueDelimiterSpacingRule with
+            | RightOnly
+            | BothSides -> [TriviaNode (Whitespace (" ", 0, 0))]
+            | _ -> []
         let children = [
             whitespace
             keyValueText options value
