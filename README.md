@@ -49,6 +49,40 @@ The `Configuration` module provides a number of functions for getting values fro
 | **getNode** *sectionName keyName config*           | Node          | Looks up the last key node added with the name specified.  If not present, throws `KeyNotFoundException`.           |
 | **getFirstNode** *sectionName keyName config*      | Node          | Looks up the first key node added with the name specified.  If not present, throws `KeyNotFoundException`.          |
 
+### Example
+
+```fsharp
+let options = Options.defaultOptions.WithDuplicateKeyRule DuplicateKeyAddsValue
+
+let textIn = "[Section 1]\n\
+              key = test\n\
+              \n"
+
+let config =
+    textIn
+    |> Configuration.fromText Options.defaultOptions
+    |> Configuration.add options "Section 1" "key" "test value 2"
+    |> Configuration.add options "Section 2" "up" "down"
+    |> Configuration.add options "Section 2" "beauty" "truth"
+
+let textOut = Configuration.toText (options.WithNameValueDelimiterRule(ColonDelimiter)) config
+    
+printfn "%O\n" (Configuration.getMultiValues "Section 1" "key" config)
+printfn "%s" textOut```
+
+Output:
+```
+[test; test value 2]
+
+[Section 1]
+key: test
+key: test value 2
+
+[Section 2]
+up: down
+beauty: truth
+```
+
 ## C# wrapper classes
 
 Since the functional style used by the `Configuration` module is meant to be conducive to piping changes through F#'s `|>` operator, it is less than convenient to use in C#, so wrapper classes are made available in `IniLib.Wrappers` that provide a more familiar indexing syntax.
@@ -138,8 +172,8 @@ var options = Options.defaultOptions
 | Rule option                           | Description                                                                                                                                                  |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | IgnoreEscapeSequences                 | Escape sequences are ignored and parsed as literal text.                                                                                                     |
-| UseEscapeSequences                    | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:`, `\ ` and `\xHHHH`                                             |
-| UseEscapeSequencesAndLineContinuation | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:`, `\ ` and `\xHHHH`, as well as the line continuation token `\` |
+| UseEscapeSequences                    | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:`, `\&blank;` and `\xHHHH`                                             |
+| UseEscapeSequencesAndLineContinuation | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:`, `\&blank;` and `\xHHHH`, as well as the line continuation token `\` |
 
 ### GlobalPropertiesRule
 
@@ -163,12 +197,12 @@ var options = Options.defaultOptions
 
 Additionally, when using one of the `Options.with...` functions to change this option, `NameValueDelimiterPreferenceRule` and `NameValueDelimiterSpacingRule` are changed to certain defaults at the same time.
 
-| NameValueDelimiterRule | Sets `NameValueDelimiterPreferenceRule` to | Sets `NameValueDelimiterSpacingRule` to |
-| ---------------------- | ------------------------------------------ | --------------------------------------- |
-| EqualsOrColonDelimiter | PreferEqualsDelimiter                      | BothSides                               |
-| EqualsDelimiter        | PreferEqualsDelimiter                      | BothSides                               |
-| ColonDelimiter         | PreferColonDelimiter                       | RightOnly                               |
-| NoDelimiter            | PreferNoDelimiter                          | LeftOnly                                |
+| NameValueDelimiterRule | Sets NameValueDelimiterPreferenceRule to | Sets NameValueDelimiterSpacingRule to |
+| ---------------------- | ---------------------------------------- | ------------------------------------- |
+| EqualsOrColonDelimiter | PreferEqualsDelimiter                    | BothSides                             |
+| EqualsDelimiter        | PreferEqualsDelimiter                    | BothSides                             |
+| ColonDelimiter         | PreferColonDelimiter                     | RightOnly                             |
+| NoDelimiter            | PreferNoDelimiter                        | LeftOnly                              |
 
 ### NameValueDelimiterPreferenceRule
 
