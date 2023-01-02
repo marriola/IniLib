@@ -30,7 +30,7 @@ let config =
 
 ## Using a configuration
 
-The `Configuration` module provides a number of functions for getting values from a configuration.
+### Reading
 
 | Function                                           | Return type   | Description                                                                                                         |
 | -------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -48,8 +48,37 @@ The `Configuration` module provides a number of functions for getting values fro
 | **getFirstInt** *sectionName keyName config*       | int           | Looks up the first value added to a key and converts it to an `int`. If not present in the section, returns `None`. |
 | **getNode** *sectionName keyName config*           | Node          | Looks up the last key node added with the name specified.  If not present, throws `KeyNotFoundException`.           |
 | **getFirstNode** *sectionName keyName config*      | Node          | Looks up the first key node added with the name specified.  If not present, throws `KeyNotFoundException`.          |
-| **ofList** *options xs*                            | Configuration | Generates a configuration from a list of tuples of section name, key name, and value.                               |
-| **ofSeq** *options seq*                            | Configuration | Generates a configuration from a sequence of tuples of section name, key name, and value.                               |
+
+### Modifying
+
+| Function                                                  | Return type   | Description                                                                                                                                                                    |
+| --------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **add** *options section key value config*                | Configuration | Adds a key with a value to a section. If using the DuplicateKeyAddsValue rule, subsequent calls for the same key add additional keys; otherwise, the original key is replaced. |
+| **renameKey** *options section key newKeyName config*     | Configuration | Renames a key.                                                                                                                                                                 |
+| **renameSection** *options section newSectionName config* | Configuration | Renames a section.                                                                                                                                                             |
+| **removeKey** *options section key config*                | Configuration | Removes a key from a section.                                                                                                                                                  |
+| **removeSection** *options section config*                | Configuration | Removes a section.                                                                                                                                                             |
+
+### Creating
+
+| Function                                           | Return type   | Description                                                                               |
+| -------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------- |
+| **ofList** *options xs*                            | Configuration | Generates a configuration from a list of tuples of section name, key name, and value.     |
+| **ofSeq** *options seq*                            | Configuration | Generates a configuration from a sequence of tuples of section name, key name, and value. |                              |
+| **fromFile** *options path*                        | Configuration | Generates a configuration from a file.                                                    |
+| **fromText** *options text*                        | Configuration | Generates a configuration from a text reader.                                             |
+| **fromStream** *options stream*                    | Configuration | Generates a configuration from a stream.                                                  |
+| **fromStreamReader** *options streamReader*        | Configuration | Generates a configuration from a stream reader.                                           |
+| **fromTextReader** *options textReader*            | Configuration | Generates a configuration from a text reader.                                             |
+
+### Saving
+
+| Function                                           | Return type   | Description                                |
+| -------------------------------------------------- | ------------- | ------------------------------------------ |
+| **toText** *options config*                        | string        | Converts a configuration to text.          |
+| **writeToFile** *options path config*              | unit          | Writes a configuration to a file.          |
+| **writeToStream** *options stream*                 | unit          | Writes a configuration to a stream.        |
+| **writeToStreamWriter** *options streamWriter*     | unit          | Writes a configuration to a stream writer. |
 
 ### Example
 
@@ -86,8 +115,6 @@ printfn "%s" textOut
 // beauty: truth
 ```
 
-You can also generate configurations from lists or sequences of tuples:
-
 ```fsharp
 let options = Options.defaultOptions.WithDuplicateKeyRule DuplicateKeyAddsValue
 
@@ -115,7 +142,7 @@ printf "%s" (Configuration.toText options config)
 // quux = 5
 ```
 
-### C# wrapper classes
+## C# wrapper classes
 
 Since the functional style used by the `Configuration` module is meant to be conducive to piping changes through F#'s `|>` operator, it is less than convenient to use in C#, so wrapper classes are made available in `IniLib.Wrappers` that provide a more familiar indexing syntax.
 
