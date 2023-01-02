@@ -52,6 +52,7 @@ namespace IniLib.Wrappers
         /// <returns>A new ConfigurationWrapper of the file.</returns>
         public static ConfigurationWrapper FromText(string text, Options options = null)
         {
+            options = options ?? Options.defaultOptions;
             return new ConfigurationWrapper(options, Configuration.fromText(options, text));
         }
 
@@ -63,6 +64,7 @@ namespace IniLib.Wrappers
         /// <returns>A new ConfigurationWrapper of the file.</returns>
         public static ConfigurationWrapper FromFile(string path, Options options = null)
         {
+            options = options ?? Options.defaultOptions;
             return new ConfigurationWrapper(options, Configuration.fromFile(options, path));
         }
 
@@ -74,18 +76,32 @@ namespace IniLib.Wrappers
         /// <returns>A new ConfigurationWrapper of the file.</returns>
         public static ConfigurationWrapper FromStream(Stream stream, Options options = null)
         {
+            options = options ?? Options.defaultOptions;
             return new ConfigurationWrapper(options, Configuration.fromStream(options, stream));
         }
 
         /// <summary>
         /// Reads a configuration file from a stream reader.
         /// </summary>
-        /// <param name="streamReader">A configuration file stream reader.</param>
+        /// <param name="textReader">A configuration file stream reader.</param>
         /// <param name="options">Optional. The options to use to read the configuration file.</param>
         /// <returns>A new ConfigurationWrapper of the file.</returns>
-        public static ConfigurationWrapper FromStreamReader(StreamReader streamReader, Options options = null)
+        public static ConfigurationWrapper FromStreamReader(StreamReader textReader, Options options = null)
         {
-            return new ConfigurationWrapper(options, Configuration.fromStreamReader(options, streamReader));
+            options = options ?? Options.defaultOptions;
+            return new ConfigurationWrapper(options, Configuration.fromStreamReader(options, textReader));
+        }
+
+        /// <summary>
+        /// Reads a configuration file from a text reader.
+        /// </summary>
+        /// <param name="textReader">A configuration file text reader.</param>
+        /// <param name="options">Optional. The options to use to read the configuration file.</param>
+        /// <returns>A new ConfigurationWrapper of the file.</returns>
+        public static ConfigurationWrapper FromTextReader(TextReader textReader, Options options = null)
+        {
+            options = options ?? Options.defaultOptions;
+            return new ConfigurationWrapper(options, Configuration.fromTextReader(options, textReader));
         }
 
         /// <summary>
@@ -95,16 +111,19 @@ namespace IniLib.Wrappers
         /// <returns>A tuple of <see cref="IniLib.Wrapppers.KeyMapWrapper"/> and <see cref="IniLib.Node"/>.</returns>
         public Tuple<KeyMapWrapper, List<Node>> TryGetSectionNode (string sectionName)
         {
-            if (Configuration.tryGetSection(sectionName, _state) is var result)
+            var result = Configuration.tryGetSection(sectionName, _state);
+            if (result == null)
+            {
+                return null;
+            }
+            else
             {
                 var keyMap = new KeyMapWrapper(_options, _state, sectionName, result.Value.Item1, this.ReplaceState);
                 return Tuple.Create(keyMap, result.Value.Item2.ToList());
             }
-            else
-            {
-                return null;
-            }
         }
+
+        public ICollection<string> GetSections() => _state.Item2.Item.Keys;
 
         /// <summary>
         /// Converts the configuration back to the original format.

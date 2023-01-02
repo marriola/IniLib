@@ -138,6 +138,10 @@ module Configuration =
     let fromStreamReader options (reader: StreamReader) =
         fromText options (reader.ReadToEnd())
 
+    /// Parses a configuration from a text reader.
+    let fromTextReader options (reader: TextReader) =
+        fromText options (reader.ReadToEnd())
+
     /// Parses a configuration from a file.
     let fromFile options path =
         path
