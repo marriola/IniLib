@@ -441,22 +441,31 @@ module Configuration =
                 |> Option.defaultValue "\n"
             let newline =
                 if lastChildText.EndsWith("\n")
-                    then None
-                    else Some (TriviaNode (Whitespace (newlineText, 0, 0)))
+                    then []
+                    else [ TriviaNode (Whitespace (newlineText, 0, 0)) ]
+            let sectionHeadingNode =
+                if sectionName = "<global>" && options.globalKeysRule = AllowGlobalKeys then
+                    []
+                else
+                    [ SectionHeadingNode (sectionName, [
+                          TokenNode (LeftBracket (0, 0))
+                          ReplaceableTokenNode (Text (sectionName, 0, 0))
+                          TokenNode (RightBracket (0, 0))
+                          TokenNode (Whitespace (newlineText, 0, 0))
+                      ]) ]
             let nodesOut = [
-                SectionNode (sectionName, [
-                    SectionHeadingNode (sectionName, [
-                        TokenNode (LeftBracket (0, 0))
-                        ReplaceableTokenNode (Text (sectionName, 0, 0))
-                        TokenNode (RightBracket (0, 0))
-                        TokenNode (Whitespace (newlineText, 0, 0))
-                    ])
-                    keyNode
-                ])
+                SectionNode (sectionName, sectionHeadingNode @ [ keyNode ])
                 TriviaNode (Whitespace (newlineText, 0, 0))
             ]
 
-            let newTree = RootNode (children @ Option.toList newline @ nodesOut)
+            let newChildren =
+                if sectionName = "<global>" && options.globalKeysRule = AllowGlobalKeys then
+                    let comments = List.takeWhile (function TriviaNode _ | CommentNode _ -> true | _ -> false) children
+                    comments @ nodesOut @ newline @ children[comments.Length..]
+                else
+                    children @ newline @ nodesOut
+
+            let newTree = RootNode newChildren
             let newDic = toMap options newTree
 
             Configuration (newTree, newDic)
