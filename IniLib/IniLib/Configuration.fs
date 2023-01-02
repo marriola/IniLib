@@ -525,7 +525,7 @@ module Configuration =
                         | None -> []
                     let keyNameNode = KeyNameNode (name, keyNameNodeStripped @ leftWhitespace)
                     let keyValueNode = KeyValueNode (value, rightWhitespace @ keyValueNodeStripped)
-                    KeyNode (name, value, [ keyNameNode ] @ assignmentNode @ [ keyValueNode ] @ rest)
+                    KeyNode (name, value, [ NodeBuilder.sanitize options keyNameNode ] @ assignmentNode @ [ keyValueNode ] @ rest)
                 
             let newSectionChildren =
                 sectionChildren

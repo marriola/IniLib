@@ -97,3 +97,21 @@ module EscapeSequenceRuleTests =
                         bar\\ mitzvah 9001\n\
                         \n"
         Assert.Equal(expected, text)
+
+    [<Fact>]
+    let ``Changing delimiter to NoDelimiter after reading configuration escapes pre-existing key names with whitespace`` () =
+        let options = Options.defaultOptions.WithNewlineRule LfNewline
+        let text = "[Section 1]\n\
+                    foo bar = 1\n\
+                    baz = 2\n\
+                    quux = 3\n\
+                    \n"
+        let config = Configuration.fromText options text
+        let writeOptions = options.WithNameValueDelimiterRule(NoDelimiter).WithEscapeSequenceRule(UseEscapeSequences)
+        let textWithNoDelimiter = Configuration.toText writeOptions config
+        let expected = "[Section 1]\n\
+                        foo\\ bar 1\n\
+                        baz 2\n\
+                        quux 3\n\
+                        \n"
+        Assert.Equal(expected, textWithNoDelimiter)
