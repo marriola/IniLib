@@ -34,6 +34,25 @@ namespace IniLib.Wrappers
             : this(options, configuration)
         { }
 
+
+        /// <summary>
+        /// Instantiates a new configuration from a list of tuples.
+        /// </summary>
+        /// <param name="values">A list of tuples consisting of a section name, key name, and value.</param>
+        /// <param name="options">Optional. Overrides the default configuration options.</param>
+        public ConfigurationWrapper(List<Tuple<string, string, string>> values, Options options = null)
+            : this(options, Configuration.ofList(options ?? Options.defaultOptions, ListModule.OfSeq(values)))
+        { }
+
+        /// <summary>
+        /// Instantiates a new configuration from a sequence of tuples.
+        /// </summary>
+        /// <param name="values">A sequence of tuples consisting of a section name, key name, and value.</param>
+        /// <param name="options">Optional. Overrides the default configuration options.</param>
+        public ConfigurationWrapper(IEnumerable<Tuple<string, string, string>> values, Options options = null)
+            : this(options, Configuration.ofSeq(options ?? Options.defaultOptions, ListModule.OfSeq(values)))
+        { }
+
         /// <summary>
         /// Gets a section.
         /// </summary>

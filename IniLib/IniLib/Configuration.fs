@@ -119,111 +119,6 @@ module Configuration =
 
         getSections' [] children
 
-    /// Parses a configuration from text.
-    let fromText options text =
-        let tree =
-            text
-            |> Lexer.lex options
-            |> Parser.parse options
-
-        Configuration (tree, toMap options tree)
-
-    /// Parses a configuration from a stream.
-    let fromStream options (stream: Stream) =
-        use reader = new StreamReader(stream)
-        fromText options (reader.ReadToEnd())
-
-    /// Parses a configuration from a stream reader.
-    let fromStreamReader options (reader: StreamReader) =
-        fromText options (reader.ReadToEnd())
-
-    /// Parses a configuration from a text reader.
-    let fromTextReader options (reader: TextReader) =
-        fromText options (reader.ReadToEnd())
-
-    /// Parses a configuration from a file.
-    let fromFile options path =
-        path
-        |> File.ReadAllText
-        |> fromText options
-
-    /// Converts all assignment tokens and the surrounding spacing if they disagree with the applied name value delimiter preference and spacing rules
-    let private convertNameValueDelimiters options (RootNode children) =
-        let convertSection (SectionNode (name, sectionChildren)) =
-            let convertKey name value maybeAssignmentChar keyNode (KeyNameNode (_, keyNameChildren)) (KeyValueNode (_, keyValueChildren)) rest =
-                let preferredAssignmentChar =
-                    match options.nameValueDelimiterPreferenceRule with
-                    | PreferEqualsDelimiter -> Some '='
-                    | PreferColonDelimiter -> Some ':'
-                    | PreferNoDelimiter -> None
-                if preferredAssignmentChar = maybeAssignmentChar then
-                    keyNode
-                else
-                    let leftWhitespace =
-                        match options.nameValueDelimiterSpacingRule with
-                        | BothSides
-                        | LeftOnly -> [ TriviaNode (Whitespace (" ", 0, 0)) ]
-                        | _ -> []
-                    let rightWhitespace =
-                        match options.nameValueDelimiterSpacingRule with
-                        | BothSides
-                        | RightOnly -> [ TriviaNode (Whitespace (" ", 0, 0)) ]
-                        | _ -> []
-                    let keyNameNodeStripped =
-                        keyNameChildren
-                        |> List.rev
-                        |> List.skipWhile (function TriviaNode (Whitespace _) -> true | _ -> false)
-                        |> List.rev
-                    let keyValueNodeStripped =
-                        keyValueChildren
-                        |> List.skipWhile (function TriviaNode (Whitespace _) -> true | _ -> false)
-                    let assignmentNode =
-                        match preferredAssignmentChar with
-                        | Some c -> [ TokenNode (Assignment (c, 0, 0)) ]
-                        | None -> []
-                    let keyNameNode = KeyNameNode (name, keyNameNodeStripped @ leftWhitespace)
-                    let keyValueNode = KeyValueNode (value, rightWhitespace @ keyValueNodeStripped)
-                    KeyNode (name, value, [ keyNameNode ] @ assignmentNode @ [ keyValueNode ] @ rest)
-                
-            let newSectionChildren =
-                sectionChildren
-                |> List.map (function
-                    | KeyNode (name, value, (KeyNameNode _ as keyNameNode)::(KeyValueNode _ as keyValueNode)::rest) as keyNode ->
-                        convertKey name value None keyNode keyNameNode keyValueNode rest
-
-                    | KeyNode (name, value, (KeyNameNode _ as keyNameNode)::(TokenNode (Assignment (c, _, _)))::(KeyValueNode _ as keyValueNode)::rest) as keyNode ->
-                        convertKey name value (Some c) keyNode keyNameNode keyValueNode rest
-
-                    | node ->
-                        node)
-            SectionNode (name, newSectionChildren)
-        let newChildren =
-            children
-            |> List.map (function
-                | SectionNode _ as sectionNode -> convertSection sectionNode
-                | node -> node)
-        RootNode newChildren
-
-    /// Converts the configuration to text.
-    let toText options (Configuration (tree, _)) =
-        let newTree = convertNameValueDelimiters options tree
-        Node.toText options newTree
-
-    /// Writes a configuration to a file.
-    let writeToFile options (path: string) config =
-        use streamWriter = new StreamWriter(path)
-        streamWriter.Write(toText options config)
-
-    /// Writes a configuration to a stream writer.
-    let writeToStreamWriter options (streamWriter: StreamWriter) config =
-        streamWriter.Write(toText options config)
-
-    /// Writes a configuration to a stream.
-    let writeToStream options (encoding: System.Text.Encoding) (stream: Stream) config =
-        let text = toText options config
-        let buffer = encoding.GetBytes(text)
-        stream.Write(buffer, 0, buffer.Length)
-
     /// The section keys of the configuration.
     let sections config =
         let (Configuration (_, dic)) = config
@@ -562,3 +457,111 @@ module Configuration =
                             tree))
             
         Configuration (newTree, toMap options newTree)
+
+    let ofList options xs = List.fold (fun config (section, key, value) -> add options section key value config) empty xs
+    let ofSeq options seq = Seq.fold (fun config (section, key, value) -> add options section key value config) empty seq
+
+    /// Parses a configuration from text.
+    let fromText options text =
+        let tree =
+            text
+            |> Lexer.lex options
+            |> Parser.parse options
+
+        Configuration (tree, toMap options tree)
+
+    /// Parses a configuration from a stream.
+    let fromStream options (stream: Stream) =
+        use reader = new StreamReader(stream)
+        fromText options (reader.ReadToEnd())
+
+    /// Parses a configuration from a stream reader.
+    let fromStreamReader options (reader: StreamReader) =
+        fromText options (reader.ReadToEnd())
+
+    /// Parses a configuration from a text reader.
+    let fromTextReader options (reader: TextReader) =
+        fromText options (reader.ReadToEnd())
+
+    /// Parses a configuration from a file.
+    let fromFile options path =
+        path
+        |> File.ReadAllText
+        |> fromText options
+
+    /// Converts all assignment tokens and the surrounding spacing if they disagree with the applied name value delimiter preference and spacing rules
+    let private convertNameValueDelimiters options (RootNode children) =
+        let convertSection (SectionNode (name, sectionChildren)) =
+            let convertKey name value maybeAssignmentChar keyNode (KeyNameNode (_, keyNameChildren)) (KeyValueNode (_, keyValueChildren)) rest =
+                let preferredAssignmentChar =
+                    match options.nameValueDelimiterPreferenceRule with
+                    | PreferEqualsDelimiter -> Some '='
+                    | PreferColonDelimiter -> Some ':'
+                    | PreferNoDelimiter -> None
+                if preferredAssignmentChar = maybeAssignmentChar then
+                    keyNode
+                else
+                    let leftWhitespace =
+                        match options.nameValueDelimiterSpacingRule with
+                        | BothSides
+                        | LeftOnly -> [ TriviaNode (Whitespace (" ", 0, 0)) ]
+                        | _ -> []
+                    let rightWhitespace =
+                        match options.nameValueDelimiterSpacingRule with
+                        | BothSides
+                        | RightOnly -> [ TriviaNode (Whitespace (" ", 0, 0)) ]
+                        | _ -> []
+                    let keyNameNodeStripped =
+                        keyNameChildren
+                        |> List.rev
+                        |> List.skipWhile (function TriviaNode (Whitespace _) -> true | _ -> false)
+                        |> List.rev
+                    let keyValueNodeStripped =
+                        keyValueChildren
+                        |> List.skipWhile (function TriviaNode (Whitespace _) -> true | _ -> false)
+                    let assignmentNode =
+                        match preferredAssignmentChar with
+                        | Some c -> [ TokenNode (Assignment (c, 0, 0)) ]
+                        | None -> []
+                    let keyNameNode = KeyNameNode (name, keyNameNodeStripped @ leftWhitespace)
+                    let keyValueNode = KeyValueNode (value, rightWhitespace @ keyValueNodeStripped)
+                    KeyNode (name, value, [ keyNameNode ] @ assignmentNode @ [ keyValueNode ] @ rest)
+                
+            let newSectionChildren =
+                sectionChildren
+                |> List.map (function
+                    | KeyNode (name, value, (KeyNameNode _ as keyNameNode)::(KeyValueNode _ as keyValueNode)::rest) as keyNode ->
+                        convertKey name value None keyNode keyNameNode keyValueNode rest
+
+                    | KeyNode (name, value, (KeyNameNode _ as keyNameNode)::(TokenNode (Assignment (c, _, _)))::(KeyValueNode _ as keyValueNode)::rest) as keyNode ->
+                        convertKey name value (Some c) keyNode keyNameNode keyValueNode rest
+
+                    | node ->
+                        node)
+            SectionNode (name, newSectionChildren)
+        let newChildren =
+            children
+            |> List.map (function
+                | SectionNode _ as sectionNode -> convertSection sectionNode
+                | node -> node)
+        RootNode newChildren
+
+    /// Converts the configuration to text.
+    let toText options (Configuration (tree, _)) =
+        let newTree = convertNameValueDelimiters options tree
+        Node.toText options newTree
+
+    /// Writes a configuration to a file.
+    let writeToFile options (path: string) config =
+        use streamWriter = new StreamWriter(path)
+        streamWriter.Write(toText options config)
+
+    /// Writes a configuration to a stream writer.
+    let writeToStreamWriter options (streamWriter: StreamWriter) config =
+        streamWriter.Write(toText options config)
+
+    /// Writes a configuration to a stream.
+    let writeToStream options (encoding: System.Text.Encoding) (stream: Stream) config =
+        let text = toText options config
+        let buffer = encoding.GetBytes(text)
+        stream.Write(buffer, 0, buffer.Length)

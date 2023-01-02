@@ -48,6 +48,8 @@ The `Configuration` module provides a number of functions for getting values fro
 | **getFirstInt** *sectionName keyName config*       | int           | Looks up the first value added to a key and converts it to an `int`. If not present in the section, returns `None`. |
 | **getNode** *sectionName keyName config*           | Node          | Looks up the last key node added with the name specified.  If not present, throws `KeyNotFoundException`.           |
 | **getFirstNode** *sectionName keyName config*      | Node          | Looks up the first key node added with the name specified.  If not present, throws `KeyNotFoundException`.          |
+| **ofList** *options xs*                            | Configuration | Generates a configuration from a list of tuples of section name, key name, and value.                               |
+| **ofSeq** *options seq*                            | Configuration | Generates a configuration from a sequence of tuples of section name, key name, and value.                               |
 
 ### Example
 
@@ -68,24 +70,52 @@ let config =
 let keyValue = Configuration.getMultiValues "Section 1" "key" config
 printfn "%O\n" keyValue
 
+// Output: [test; test value 2]
+
 let textOut = Configuration.toText (options.WithNameValueDelimiterRule ColonDelimiter) config
 printfn "%s" textOut
+
+// Output:
+
+// [Section 1]
+// key: test
+// key: test value 2
+// 
+// [Section 2]
+// up: down
+// beauty: truth
 ```
 
-Output:
+You can also generate configurations from lists or sequences of tuples:
+
+```fsharp
+let options = Options.defaultOptions.WithDuplicateKeyRule DuplicateKeyAddsValue
+
+let config =
+	[ "foo", "bar", "baz"
+	  "foo", "bar", "2"
+	  "foo", "bar", "3"
+	  "Section 2", "test", "key"
+	  "Section 3", "quux", "5" ]
+	|> Configuration.ofList options
+	
+printf "%s" (Configuration.toText options config)
+
+// Output:
+
+// [foo]
+// bar = baz
+// bar = 2
+// bar = 3
+// 
+// [Section 2]
+// test = key
+// 
+// [Section 3]
+// quux = 5
 ```
-[test; test value 2]
 
-[Section 1]
-key: test
-key: test value 2
-
-[Section 2]
-up: down
-beauty: truth
-```
-
-## C# wrapper classes
+### C# wrapper classes
 
 Since the functional style used by the `Configuration` module is meant to be conducive to piping changes through F#'s `|>` operator, it is less than convenient to use in C#, so wrapper classes are made available in `IniLib.Wrappers` that provide a more familiar indexing syntax.
 
@@ -96,12 +126,39 @@ config["foo"]["bar"] = "test";
 config["foo"]["bar"] = "ABC";
 config["foo"]["bar"] = "123";
 
-Console.WriteLine(config["foo"]["bar"]);                              // 123
-Console.WriteLine(config["foo"].GetInt("bar"));                       // 123
-Console.WriteLine(config["foo"].GetFirstValue("bar"));                // test
-Console.WriteLine(string.Join(", ", config["foo"].GetValues("bar"))); // test, ABC, 123
+Console.WriteLine(config["foo"]["bar"]);                              // Output: 123
+Console.WriteLine(config["foo"].GetInt("bar"));                       // Output: 123
+Console.WriteLine(config["foo"].GetFirstValue("bar"));                // Output: test
+Console.WriteLine(string.Join(", ", config["foo"].GetValues("bar"))); // Output: test, ABC, 123
 
 config.WriteToFile("settings.ini");
+
+
+// Generate a configuration from a list of tuples
+
+config = new IniLib.Wrappers.ConfigurationWrapper(new List<Tuple<string, string, string>>
+{
+	Tuple.Create("foo", "bar", "baz"),
+	Tuple.Create("foo", "bar", "2"),
+	Tuple.Create("foo", "bar", "3"),
+	Tuple.Create("Section 2", "test", "key"),
+	Tuple.Create("Section 3", "quux", "5"),
+}, options);
+
+Console.Write(conf.ToString());
+
+// Output:
+
+// [foo]
+// bar = baz
+// bar = 2
+// bar = 3
+// 
+// [Section 2]
+// test = key
+// 
+// [Section 3]
+// quux = 5
 ```
 
 ## Options
