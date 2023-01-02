@@ -1,7 +1,7 @@
 ﻿module internal IniLib.Parser
 
-open FSharpPlus
 open System.Text.RegularExpressions
+open IniLib.Utilities
 
 let internal escapeCodeToCharacter = dict [
     '\\', '\\'
@@ -346,7 +346,7 @@ let parse (options: Options) tokens =
 
         // Parse the next key with any consumed whitespace from the last line of the output added to it
         | _ ->
-            let doesNotEndWithNewline = Node.toText options >> String.contains '\n' >> not
+            let doesNotEndWithNewline = Node.toText options >> String.contains "\n" >> not
             let leadingWhitespace = List.ofSeq (Seq.takeWhile doesNotEndWithNewline outNodes)
             let outNodes = List.skip (List.length leadingWhitespace) outNodes
             let keyName, nextKey, tokens = parseKey leadingWhitespace tokens
@@ -431,7 +431,7 @@ let parse (options: Options) tokens =
 
                 | Some i, MergeDuplicateSectionIntoOriginal ->
                     let mergedSection = mergeSections output[i] sectionNode
-                    List.replace [output[i]] [mergedSection] output
+                    List.replace output[i] mergedSection output
 
                 | _ ->
                     sectionNode :: output

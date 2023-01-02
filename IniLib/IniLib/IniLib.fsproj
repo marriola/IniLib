@@ -20,6 +20,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Utilities\List.fs" />
+    <Compile Include="Utilities\Map.fs" />
+    <Compile Include="Utilities\Operators.fs" />
+    <Compile Include="Utilities\String.fs" />
     <Compile Include="Properties\AssemblyInfo.fs" />
     <Compile Include="Options.fs" />
     <Compile Include="Token.fs" />
@@ -34,10 +38,6 @@
   <ItemGroup>
     <None Include="Properties\PublishProfiles\Release.pubxml" />
     <None Include="Properties\PublishProfiles\Release.pubxml.user" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="FSharpPlus" Version="1.3.2" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
 ﻿namespace IniLib
 
-open FSharpPlus
+open IniLib.Utilities
 
 type Node =
     | RootNode of children: Node list

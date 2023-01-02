@@ -1,12 +1,11 @@
 ﻿namespace IniLib
 
-open System.Collections.Generic
-
 module Configuration =
 
-    open FSharpPlus
     open IniLib
+    open IniLib.Utilities
     open System
+    open System.Collections.Generic
     open System.IO
 
     type KeyMap = KeyMap of Map<string, (string * Node) list>

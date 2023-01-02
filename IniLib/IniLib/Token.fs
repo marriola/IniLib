@@ -1,6 +1,6 @@
 ﻿namespace IniLib
 
-open FSharpPlus
+open IniLib.Utilities
 
 type Token =
     | LeftBracket of line: int * column: int

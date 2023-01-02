@@ -1,7 +1,7 @@
 ﻿module IniLib.NodeBuilder
 
 open System.Text.RegularExpressions
-open FSharpPlus
+open IniLib.Utilities
 
 let private RE_LEADING_OR_TRAILING_WHITESPACE = new Regex(["\\s+.*"; ".*?\\s+"; "\\s+.*?\\s+"] |> String.concat "|")
 let private RE_WHITESPACE = new Regex("\\s");
