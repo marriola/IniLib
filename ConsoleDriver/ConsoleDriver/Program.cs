@@ -279,6 +279,11 @@ internal class Program
         {
             config.WriteToFile(OutPath, Options);
         }
+        else
+        {
+            // Write back to input file if no other output specified
+            config.WriteToFile(InputFile, Options);
+        }
     }
 
     private static void PrintSections(ConfigurationWrapper config)
