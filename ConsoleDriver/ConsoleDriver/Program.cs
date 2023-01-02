@@ -309,7 +309,7 @@ internal class Program
 
         foreach (var node in keys)
         {
-            Console.Write(NodeModule.toText(Options, node));
+            Console.WriteLine($"{node.name}={node.value}");
         }
     }
 

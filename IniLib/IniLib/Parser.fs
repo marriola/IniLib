@@ -119,6 +119,7 @@ let parse (options: Options) tokens =
             '#', '#'
             ':', ':'
             ' ', ' '
+            's', ' '
         ]
 
         let (|EscapedText|_|) token =

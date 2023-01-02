@@ -20,6 +20,7 @@ module EscapeSequenceRuleTests =
         '#', '#'
         ':', ':'
         ' ', ' '
+        's', ' '
     ]
 
     [<Fact>]
