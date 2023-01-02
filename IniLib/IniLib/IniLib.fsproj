@@ -32,6 +32,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="Properties\PublishProfiles\Release.pubxml" />
+    <None Include="Properties\PublishProfiles\Release.pubxml.user" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FSharpPlus" Version="1.3.2" />
   </ItemGroup>
 
