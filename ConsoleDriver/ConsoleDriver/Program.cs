@@ -27,6 +27,12 @@ internal class Program
     [Argument('n', "newline", "Print newline after value")]
     private static bool ShowNewline { get; set; }
 
+    [Argument('d', "delete", "Delete key or section specified")]
+    private static bool Delete { get; set; }
+
+    [Argument('y', "yes", "Do not prompt confirmation to delete")]
+    private static bool Yes { get; set; }
+
     [Argument('C', "commentRule", "Comment rule")]
     private static string CommentRuleText { get; set; }
 
@@ -96,7 +102,7 @@ internal class Program
 
     private static Dictionary<string, CommentRule> TextToCommentRule = new()
     {
-        [string.Empty] = CommentRule.HashAndSemicolonComments,
+        ["<default>"] = CommentRule.HashAndSemicolonComments,
         ["HashAndSemicolonComments"] = CommentRule.HashAndSemicolonComments,
         ["HashComments"] = CommentRule.HashComments,
         ["SemicolonComments"] = CommentRule.SemicolonComments
@@ -104,7 +110,7 @@ internal class Program
 
     private static Dictionary<string, DuplicateKeyRule> TextToDuplicateKeyRule = new()
     {   
-        [string.Empty] = DuplicateKeyRule.DisallowDuplicateKeys,
+        ["<default>"] = DuplicateKeyRule.DisallowDuplicateKeys,
         ["DisallowDuplicateKeys"] = DuplicateKeyRule.DisallowDuplicateKeys,
         ["DuplicateKeyReplacesValue"] = DuplicateKeyRule.DuplicateKeyReplacesValue,
         ["DuplicateKeyAddsValue"] = DuplicateKeyRule.DuplicateKeyAddsValue
@@ -112,7 +118,7 @@ internal class Program
 
     private static Dictionary<string, DuplicateSectionRule> TextToDuplicateSectionRule = new()
     {
-        [string.Empty] = DuplicateSectionRule.DisallowDuplicateSections,
+        ["<default>"] = DuplicateSectionRule.DisallowDuplicateSections,
         ["DisallowDuplicateSections"] = DuplicateSectionRule.DisallowDuplicateSections,
         ["AllowDuplicateSections"] = DuplicateSectionRule.AllowDuplicateSections,
         ["MergeDuplicateSectionIntoOriginal"] = DuplicateSectionRule.MergeDuplicateSectionIntoOriginal,
@@ -121,7 +127,7 @@ internal class Program
 
     private static Dictionary<string, EscapeSequenceRule> TextToEscapeSequenceRule = new()
     {
-        [string.Empty] = EscapeSequenceRule.IgnoreEscapeSequences,
+        ["<default>"] = EscapeSequenceRule.IgnoreEscapeSequences,
         ["IgnoreEscapeSequences"] = EscapeSequenceRule.IgnoreEscapeSequences,
         ["UseEscapeSequences"] = EscapeSequenceRule.UseEscapeSequences,
         ["UseEscapeSequencesAndLineContinuation"] = EscapeSequenceRule.UseEscapeSequencesAndLineContinuation
@@ -129,14 +135,14 @@ internal class Program
 
     private static Dictionary<string, GlobalKeysRule> TextToGlobalKeysRule = new()
     {
-        [string.Empty] = GlobalKeysRule.DisallowGlobalKeys,
+        ["<default>"] = GlobalKeysRule.DisallowGlobalKeys,
         ["DisallowGlobalKeys"] = GlobalKeysRule.DisallowGlobalKeys,
         ["AllowGlobalKeys"] = GlobalKeysRule.AllowGlobalKeys
     };
 
     private static Dictionary<string, NameValueDelimiterRule> TextToNameValueDelimiterRule = new()
     {
-        [string.Empty] = NameValueDelimiterRule.EqualsDelimiter,
+        ["<default>"] = NameValueDelimiterRule.EqualsDelimiter,
         ["EqualsDelimiter"] = NameValueDelimiterRule.EqualsDelimiter,
         ["ColonDelimiter"] = NameValueDelimiterRule.ColonDelimiter,
         ["EqualsOrColonDelimiter"] = NameValueDelimiterRule.EqualsOrColonDelimiter,
@@ -145,7 +151,7 @@ internal class Program
 
     private static Dictionary<string, NameValueDelimiterPreferenceRule> TextToNameValueDelimiterPreferenceRule = new()
     {
-        [string.Empty] = NameValueDelimiterPreferenceRule.PreferEqualsDelimiter,
+        ["<default>"] = NameValueDelimiterPreferenceRule.PreferEqualsDelimiter,
         ["PreferEqualsDelimiter"] = NameValueDelimiterPreferenceRule.PreferEqualsDelimiter,
         ["PreferColonDelimiter"] = NameValueDelimiterPreferenceRule.PreferColonDelimiter,
         ["PreferNoDelimiter"] = NameValueDelimiterPreferenceRule.PreferNoDelimiter
@@ -153,7 +159,7 @@ internal class Program
 
     private static Dictionary<string, NameValueDelimiterSpacingRule> TextToNameValueDelimiterSpacingRule = new()
     {
-        [string.Empty] = NameValueDelimiterSpacingRule.BothSides,
+        ["<default>"] = NameValueDelimiterSpacingRule.BothSides,
         ["BothSides"] = NameValueDelimiterSpacingRule.BothSides,
         ["LeftOnly"] = NameValueDelimiterSpacingRule.LeftOnly,
         ["RightOnly"] = NameValueDelimiterSpacingRule.RightOnly,
@@ -162,7 +168,7 @@ internal class Program
 
     private static Dictionary<string, NewlineRule> TextToNewlineRule = new()
     {
-        [string.Empty] = NewlineRule.DefaultEnvironmentNewline,
+        ["<default>"] = NewlineRule.DefaultEnvironmentNewline,
         ["DefaultEnvironmentNewline"] = NewlineRule.DefaultEnvironmentNewline,
         ["LfNewLine"] = NewlineRule.LfNewline,
         ["CrLfNewline"] = NewlineRule.CrLfNewline
@@ -170,31 +176,31 @@ internal class Program
 
     private static Dictionary<string, QuotationRule> TextToQuotationRule = new()
     {
-        [string.Empty] = QuotationRule.IgnoreQuotation,
+        ["<default>"] = QuotationRule.IgnoreQuotation,
         ["IgnoreQuotation"] = QuotationRule.IgnoreQuotation,
         ["UseQuotation"] = QuotationRule.UseQuotation,
         ["AlwaysUseQuotation"] = QuotationRule.AlwaysUseQuotation
     };
 
-    private static CommentRule CommentRule => TextToCommentRule[CommentRuleText ?? string.Empty];
+    private static CommentRule CommentRule => TextToCommentRule[CommentRuleText ?? "<default>"];
     
-    private static DuplicateKeyRule DuplicateKeyRule => TextToDuplicateKeyRule[DuplicateKeyRuleText ?? string.Empty];
+    private static DuplicateKeyRule DuplicateKeyRule => TextToDuplicateKeyRule[DuplicateKeyRuleText ?? "<default>"];
     
-    private static DuplicateSectionRule DuplicateSectionRule => TextToDuplicateSectionRule[DuplicateSectionRuleText ?? string.Empty];
+    private static DuplicateSectionRule DuplicateSectionRule => TextToDuplicateSectionRule[DuplicateSectionRuleText ?? "<default>"];
     
-    private static EscapeSequenceRule EscapeSequenceRule => TextToEscapeSequenceRule[EscapeSequenceRuleText ?? string.Empty];
+    private static EscapeSequenceRule EscapeSequenceRule => TextToEscapeSequenceRule[EscapeSequenceRuleText ?? "<default>"];
     
-    private static GlobalKeysRule GlobalKeysRule => TextToGlobalKeysRule[GlobalKeysRuleText ?? string.Empty];
+    private static GlobalKeysRule GlobalKeysRule => TextToGlobalKeysRule[GlobalKeysRuleText ?? "<default>"];
     
-    private static NameValueDelimiterRule NameValueDelimiterRule => TextToNameValueDelimiterRule[NameValueDelimiterRuleText ?? string.Empty];
+    private static NameValueDelimiterRule NameValueDelimiterRule => TextToNameValueDelimiterRule[NameValueDelimiterRuleText ?? "<default>"];
     
-    private static NameValueDelimiterPreferenceRule NameValueDelimiterPreferenceRule => TextToNameValueDelimiterPreferenceRule[NameValueDelimiterPreferenceRuleText ?? string.Empty];
+    private static NameValueDelimiterPreferenceRule NameValueDelimiterPreferenceRule => TextToNameValueDelimiterPreferenceRule[NameValueDelimiterPreferenceRuleText ?? "<default>"];
     
-    private static NameValueDelimiterSpacingRule NameValueDelimiterSpacingRule => TextToNameValueDelimiterSpacingRule[NameValueDelimiterSpacingRuleText ?? string.Empty];
+    private static NameValueDelimiterSpacingRule NameValueDelimiterSpacingRule => TextToNameValueDelimiterSpacingRule[NameValueDelimiterSpacingRuleText ?? "<default>"];
     
-    private static NewlineRule NewlineRule => TextToNewlineRule[NewlineRuleText ?? string.Empty];
+    private static NewlineRule NewlineRule => TextToNewlineRule[NewlineRuleText ?? "<default>"];
     
-    private static QuotationRule QuotationRule => TextToQuotationRule[QuotationRuleText ?? string.Empty];
+    private static QuotationRule QuotationRule => TextToQuotationRule[QuotationRuleText ?? "<default>"];
 
     private static Options Options
     {
@@ -252,11 +258,25 @@ internal class Program
         }
         else if (!string.IsNullOrWhiteSpace(KeyName))
         {
-            GetValue(config);
+            if (Delete)
+            {
+                DeleteKey(config);
+            }
+            else
+            {
+                GetValue(config);
+            }
         }
         else if (!string.IsNullOrWhiteSpace(SectionName))
         {
-            GetSection(config);
+            if (Delete)
+            {
+                DeleteSection(config);
+            }
+            else
+            {
+                GetSection(config);
+            }
         }
         else
         {
@@ -266,13 +286,19 @@ internal class Program
 
     private static ConfigurationWrapper FromConsole()
     {
-        var content = System.Console.In.ReadToEnd().Replace("\r", "\n");
+        var content = Console.In.ReadToEnd();
+
+        if (!content.Contains("\n"))
+        {
+            content = content.Replace("\r", "\n");
+        }
+
         return ConfigurationWrapper.FromText(content, Options);
     }
 
     private static void OutputConfiguration(ConfigurationWrapper config)
     {
-        if (ToStdout)
+        if (ToStdout || InputFile == "-")
         {
             Console.Write(config.ToString());
         }
@@ -293,6 +319,42 @@ internal class Program
         {
             Console.WriteLine(section);
         }
+    }
+
+    private static void DeleteKey(ConfigurationWrapper config)
+    {
+        var sectionName = SectionName ?? "<global>";
+
+        if (!Yes)
+        {
+            Console.Write($"Delete key '{KeyName}' from section '{sectionName}'? ");
+
+            if (!Console.ReadLine().Trim().ToUpper().StartsWith("Y"))
+            {
+                return;
+            }
+        }
+
+        config[sectionName].Remove(KeyName);
+        OutputConfiguration(config);
+    }
+
+    private static void DeleteSection(ConfigurationWrapper config)
+    {
+        var sectionName = SectionName ?? "<global>";
+
+        if (!Yes)
+        {
+            Console.Write($"Delete section '{sectionName}'? ");
+
+            if (!Console.ReadLine().Trim().ToUpper().StartsWith("Y"))
+            {
+                return;
+            }
+        }
+
+        config.RemoveSection(sectionName);
+        OutputConfiguration(config);
     }
 
     private static void GetSection(ConfigurationWrapper config)

@@ -45,6 +45,15 @@ namespace IniLib.Wrappers
         }
 
         /// <summary>
+        /// Removes a section from the configuration.
+        /// </summary>
+        /// <param name="sectionName">The name of the section to remove.</param>
+        public void RemoveSection(string sectionName)
+        {
+            _state = Configuration.removeSection(_options, sectionName, _state);
+        }
+
+        /// <summary>
         /// Reads a configuration file from a string.
         /// </summary>
         /// <param name="text">The text of a configuration file.</param>
