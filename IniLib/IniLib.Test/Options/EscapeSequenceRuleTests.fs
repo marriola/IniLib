@@ -81,3 +81,19 @@ module EscapeSequenceRuleTests =
         let config = Configuration.fromText options text
         let actualValue = Configuration.get "Section 1" "\"test kēy\"" config
         Assert.Equal(expectedValue, actualValue)
+
+    [<Fact>]
+    let ``Adding key name with whitespace in it causes whitespace to be escaped`` () =
+        let options =
+            Options.defaultOptions
+            |> Options.withEscapeSequenceRule UseEscapeSequences
+            |> Options.withNameValueDelimiterRule NoDelimiter
+            |> Options.withNewlineRule LfNewline
+        let config =
+            Configuration.empty
+            |> Configuration.add options "Section 1" "bar mitzvah" "9001"
+        let text = Configuration.toText options config
+        let expected = "[Section 1]\n\
+                        bar\\ mitzvah 9001\n\
+                        \n"
+        Assert.Equal(expected, text)

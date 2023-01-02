@@ -3,6 +3,24 @@
 open FSharpPlus
 open System.Text.RegularExpressions
 
+let internal escapeCodeToCharacter = dict [
+    '\\', '\\'
+    '\'', '\''
+    '"', '"'
+    '#', '#'
+    ':', ':'
+    ' ', ' '
+    's', ' '
+    '0', char 0
+    'a', char 7
+    'b', char 8
+    'f', char 12
+    'n', char 10
+    'r', char 13
+    't', char 9
+    'v', char 11
+]
+
 let parse (options: Options) tokens =
     /// Marks text and whitespace tokens in the interior of a KeyNameNode, KeyValueNode or SectionHeadingNode as replaceable,
     /// excluding any whitespace or non-text tokens at the beginning or end of the list.
@@ -103,24 +121,6 @@ let parse (options: Options) tokens =
             | ColonDelimiter -> "':'"
             | EqualsOrColonDelimiter -> "'=' or ':'"
             | NoDelimiter -> "value"
-
-        let escapeCodeToCharacter = dict [
-            '0', char 0
-            'a', char 7
-            'b', char 8
-            'f', char 12
-            'n', char 10
-            'r', char 13
-            't', char 9
-            'v', char 11
-            '\\', '\\'
-            '\'', '\''
-            '"', '"'
-            '#', '#'
-            ':', ':'
-            ' ', ' '
-            's', ' '
-        ]
 
         let (|EscapedText|_|) token =
             match token with
@@ -439,6 +439,7 @@ let parse (options: Options) tokens =
             parse' (Set.add sectionName parsedSections) output tokens
 
         // Property outside section (i.e. global property)
+        | (Quote _)::_
         | (Text _)::_ when options.globalKeysRule = AllowGlobalKeys ->
             let keys, tokens = parseKeys Set.empty [] tokens
             let section = SectionNode ("<global>", keys)

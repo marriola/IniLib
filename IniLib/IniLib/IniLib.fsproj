@@ -25,8 +25,8 @@
     <Compile Include="Token.fs" />
     <Compile Include="Lexer.fs" />
     <Compile Include="Node.fs" />
-    <Compile Include="NodeBuilder.fs" />
     <Compile Include="Parser.fs" />
+    <Compile Include="NodeBuilder.fs" />
     <Compile Include="Configuration.fs" />
     <Compile Include="MainShim.fs" />
   </ItemGroup>
