@@ -66,3 +66,18 @@ module QuotationRuleTests =
 
         let actual = Configuration.toText options config
         Assert.Equal(expected, actual)
+
+    [<Fact>]
+    let ``Always writes values in quotes when quotation rule is AlwaysUseQuotation`` () =
+        let options =
+            Options.defaultOptions
+            |> Options.withQuotationRule AlwaysUseQuotation
+            |> Options.withNewlineRule LfNewline
+        let config =
+            Configuration.empty
+            |> Configuration.add options "Section 1" "foo" "bar"
+        let expected = "[Section 1]\n\
+                        foo = \"bar\"\n\
+                        \n"
+        let actual = Configuration.toText options config
+        Assert.Equal(expected, actual)

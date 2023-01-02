@@ -123,6 +123,9 @@
   <data name="AllowGlobalKeys" xml:space="preserve">
     <value>Allow global keys</value>
   </data>
+  <data name="AlwaysUseQuotation" xml:space="preserve">
+    <value>Always use quotation</value>
+  </data>
   <data name="BothSides" xml:space="preserve">
     <value>Space on both sides of delimiter</value>
   </data>

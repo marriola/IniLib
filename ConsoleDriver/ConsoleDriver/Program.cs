@@ -91,7 +91,7 @@ internal class Program
         ['P'] = new() { "PreferEqualsDelimiter", "PreferColonDelimiter", "PreferNoDelimiter" },
         ['S'] = new() { "BothSides", "LeftOnly", "RightOnly", "NoSpacing" },
         ['N'] = new() { "DefaultEnvironmentNewline", "LfNewLine", "CrLfNewline" },
-        ['Q'] = new() { "IgnoreQuotation", "UseQuotation" }
+        ['Q'] = new() { "IgnoreQuotation", "UseQuotation", "AlwaysUseQuotation" }
     };
 
     private static Dictionary<string, CommentRule> TextToCommentRule = new()
@@ -172,7 +172,8 @@ internal class Program
     {
         [string.Empty] = QuotationRule.IgnoreQuotation,
         ["IgnoreQuotation"] = QuotationRule.IgnoreQuotation,
-        ["UseQuotation"] = QuotationRule.UseQuotation
+        ["UseQuotation"] = QuotationRule.UseQuotation,
+        ["AlwaysUseQuotation"] = QuotationRule.AlwaysUseQuotation
     };
 
     private static CommentRule CommentRule => TextToCommentRule[CommentRuleText ?? string.Empty];

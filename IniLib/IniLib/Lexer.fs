@@ -77,7 +77,7 @@ let lex options text =
             let rest, nextLine, nextColumn, commentToken = readLine line column rest
             lex' (commentToken :: hashToken :: output) nextLine nextColumn rest
 
-        | _, '"'::rest when options.quotationRule = UseQuotation ->
+        | _, '"'::rest when options.quotationRule >= UseQuotation ->
             let quoteToken = Quote (line, column)
             lex' (quoteToken :: output) nextLine nextColumn rest
 

@@ -79,6 +79,15 @@ namespace IniEditor {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Always use quotation.
+        /// </summary>
+        internal static string AlwaysUseQuotation {
+            get {
+                return ResourceManager.GetString("AlwaysUseQuotation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Space on both sides of delimiter.
         /// </summary>
         internal static string BothSides {

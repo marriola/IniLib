@@ -7,7 +7,8 @@ let private RE_LEADING_OR_TRAILING_WHITESPACE = new Regex(["\\s+.*"; ".*?\\s+"; 
 let keyValueText options value =
     let quote =
         match options.quotationRule with
-        | AlwaysUseQuotation
+        | AlwaysUseQuotation ->
+            Some (ReplaceableTokenNode (Quote (0, 0)))
         | UseQuotation when RE_LEADING_OR_TRAILING_WHITESPACE.IsMatch(value) ->
             Some (ReplaceableTokenNode (Quote (0, 0)))
         | _ ->

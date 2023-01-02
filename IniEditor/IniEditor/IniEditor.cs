@@ -84,7 +84,8 @@ namespace IniEditor
             [Strings.QuotationRule] = new()
             {
                 Strings.IgnoreQuotation,
-                Strings.UseQuotation
+                Strings.UseQuotation,
+                Strings.AlwaysUseQuotation
             }
         };
 
@@ -143,7 +144,8 @@ namespace IniEditor
         private readonly Dictionary<string, QuotationRule> _textToQuotationRule = new()
         {
             [Strings.IgnoreQuotation] = QuotationRule.IgnoreQuotation,
-            [Strings.UseQuotation] = QuotationRule.UseQuotation
+            [Strings.UseQuotation] = QuotationRule.UseQuotation,
+            [Strings.AlwaysUseQuotation] = QuotationRule.AlwaysUseQuotation
         };
 
         private readonly Dictionary<string, NewlineRule> _textToNewlineRule = new()
