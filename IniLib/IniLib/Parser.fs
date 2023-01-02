@@ -129,7 +129,7 @@ let parse (options: Options) tokens =
             | LineContinuation (line, column) -> Some (options.newlineRule.toText(), line, column)
             | _ -> None
 
-        let rec parseKeyName name consumedTokens tokens =
+        let rec parseKeyName name quote consumedTokens tokens =
             match name, tokens with
             // Premature newline
             | _, (Whitespace (text, _, _) as textToken)::_
@@ -138,18 +138,22 @@ let parse (options: Options) tokens =
 
             // No name yet - consume whitespace
             | None, (Whitespace _ as whitespaceToken)::rest ->
-                parseKeyName None (TokenNode whitespaceToken :: consumedTokens) rest
+                parseKeyName None quote (TokenNode whitespaceToken :: consumedTokens) rest
+
+            // No name yet - got quote
+            | None, (Quote _ as quoteToken)::rest ->
+                parseKeyName (Some "") (Some quoteToken) (TokenNode quoteToken :: consumedTokens) rest
 
             // Set the name
             | None, (Text (t, _, _) as textToken)::rest ->
-                parseKeyName (Some t) (TokenNode textToken :: consumedTokens) rest
+                parseKeyName (Some t) quote (TokenNode textToken :: consumedTokens) rest
 
             // Set the name with escaped text
             | None, (EscapedText (text, _, _) as token::rest) ->
-                parseKeyName (Some text) (TokenNode token :: consumedTokens) rest
+                parseKeyName (Some text) quote (TokenNode token :: consumedTokens) rest
 
             // When no delimiter: whitespace terminates key name
-            | (Some name), (Whitespace _)::_ when options.nameValueDelimiterRule = NameValueDelimiterRule.NoDelimiter ->
+            | (Some name), (Whitespace _)::_ when quote = None && options.nameValueDelimiterRule = NameValueDelimiterRule.NoDelimiter ->
                 let name = name.Trim()
                 let keyNameNode = KeyNameNode (name, List.rev consumedTokens)
                 name, keyNameNode, tokens
@@ -158,13 +162,19 @@ let parse (options: Options) tokens =
             | (Some name1), (Text (name2, _, _) as textToken)::rest
             | (Some name1), (Whitespace (name2, _, _) as textToken)::rest ->
                 let value = name1 + name2
-                parseKeyName (Some value) (TokenNode textToken :: consumedTokens) rest
+                parseKeyName (Some value) quote (TokenNode textToken :: consumedTokens) rest
 
             // Append escaped text to already read name
             | (Some name), (EscapedText (text, _, _) as token::rest) ->
                 let value = name + text
-                parseKeyName (Some value) (TokenNode token :: consumedTokens) rest
-            
+                parseKeyName (Some value) quote (TokenNode token :: consumedTokens) rest
+
+            // Closing quote
+            | (Some name), (Quote _ as quoteToken)::rest when quote <> None ->
+                let name = name.Trim()
+                let keyNameNode = KeyNameNode (name, TokenNode quoteToken :: consumedTokens |> List.rev)
+                name, keyNameNode, rest
+
             // Assignment token - we're done
             | (Some name), (Assignment _)::_ ->
                 let name = name.Trim()
@@ -259,7 +269,7 @@ let parse (options: Options) tokens =
                 let lastPosition = consumedTokens |> List.head |> Node.position
                 failwith $"Ran out of input reading key value at {lastPosition}"
 
-        let keyName, keyNameNode, tokens = parseKeyName None leadingWhitespace tokens
+        let keyName, keyNameNode, tokens = parseKeyName None None leadingWhitespace tokens
         let assignment, tokens = matchAssignment tokens
         let literalKeyValue, keyValueNode, tokens = parseKeyValue None None [] keyName tokens
         let keyValue =

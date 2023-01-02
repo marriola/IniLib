@@ -109,19 +109,6 @@ module NameValueDelimiterRuleTests =
         Assert.Equal("bar", Configuration.get "Section 1" "foo" config)
 
     [<Fact>]
-    let ``Key name may contain escape sequences`` () =
-        let options =
-            Options.defaultOptions
-            |> Options.withNameValueDelimiterRule NoDelimiter
-            |> Options.withEscapeSequenceRule UseEscapeSequences
-        let text = "[Section 1]\n\
-                    \"test\ k\\x0113y\" hello world"
-        let expectedValue = "hello world"
-        let config = Configuration.fromText options text
-        let actualValue = Configuration.get "Section 1" "\"test kēy\"" config
-        Assert.Equal(expectedValue, actualValue)
-
-    [<Fact>]
     let ``Writes empty delimiter with single whitespace in between key and value`` () =
         let options =
             Options.defaultOptions

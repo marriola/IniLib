@@ -68,3 +68,16 @@ module EscapeSequenceRuleTests =
         let config = Configuration.fromText options text
         Assert.Equal("b\\x00e6r", Configuration.get "Section 1" "foo" config)
         Assert.Equal("\\\"quux\\\"", Configuration.get "Section 1" "baz" config)
+
+    [<Fact>]
+    let ``Key name may contain escape sequences`` () =
+        let options =
+            Options.defaultOptions
+            |> Options.withNameValueDelimiterRule NoDelimiter
+            |> Options.withEscapeSequenceRule UseEscapeSequences
+        let text = "[Section 1]\n\
+                    \"test\ k\\x0113y\" hello world"
+        let expectedValue = "hello world"
+        let config = Configuration.fromText options text
+        let actualValue = Configuration.get "Section 1" "\"test kēy\"" config
+        Assert.Equal(expectedValue, actualValue)

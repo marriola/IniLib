@@ -81,3 +81,16 @@ module QuotationRuleTests =
                         \n"
         let actual = Configuration.toText options config
         Assert.Equal(expected, actual)
+
+    [<Fact>]
+    let ``Key name may be quoted`` () =
+        let options =
+            Options.defaultOptions
+            |> Options.withQuotationRule UseQuotation
+            |> Options.withNameValueDelimiterRule NoDelimiter
+        let text = "[Section 1]\n\
+                    \"bar mitzvah\" 9001"
+        let config = Configuration.fromText options text
+        let expectedValue = "9001"
+        let actualValue = Configuration.get "Section 1" "bar mitzvah" config
+        Assert.Equal(expectedValue, actualValue)
