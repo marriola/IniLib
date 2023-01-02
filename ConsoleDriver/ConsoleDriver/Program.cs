@@ -278,6 +278,10 @@ internal class Program
                 GetSection(config);
             }
         }
+        else if (InputFile == "-")
+        {
+            OutputConfiguration(config);
+        }
         else
         {
             PrintSections(config);
@@ -298,13 +302,13 @@ internal class Program
 
     private static void OutputConfiguration(ConfigurationWrapper config)
     {
-        if (ToStdout || InputFile == "-")
-        {
-            Console.Write(config.ToString());
-        }
-        else if (!string.IsNullOrEmpty(OutPath))
+        if (!string.IsNullOrEmpty(OutPath))
         {
             config.WriteToFile(OutPath, Options);
+        }
+        else if (ToStdout || InputFile == "-")
+        {
+            Console.Write(config.ToString());
         }
         else
         {
