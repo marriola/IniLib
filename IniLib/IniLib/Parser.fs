@@ -291,11 +291,13 @@ let parse (options: Options) tokens =
             if endsWithNewline then None, tokens
             else parseComment tokens
 
-        let keyNode = KeyNode (keyName, keyValue,
+        let keyNodeChildren =
             [ markReplaceableNodes keyNameNode ]
             @ assignment
             @ [ markReplaceableNodes keyValueNode ]
-            @ (List.choose id [ comment ]))
+            @ Option.toList comment
+
+        let keyNode = KeyNode (keyName, keyValue, keyNodeChildren)
 
         keyName, keyNode, tokens
 
@@ -325,7 +327,7 @@ let parse (options: Options) tokens =
             let children = (List.rev consumedTokens) @ [TokenNode bracketToken] @ whitespace
             let headingNode = markReplaceableNodes (SectionHeadingNode (sectionName, children))
 
-            headingNode, sectionName.Trim(), rest
+            headingNode, sectionName, rest
 
     let rec parseKeys parsedKeys outNodes tokens =
         match tokens with
@@ -361,8 +363,6 @@ let parse (options: Options) tokens =
 
             parseKeys (Set.add keyName parsedKeys) outNodes tokens
 
-    let isWhitespace = (function TriviaNode (Whitespace _) -> true | _ -> false)
-
     let mergeSections (SectionNode (name, existingChildren)) (SectionNode (_, duplicateChildren) as duplicateSection) =
         let first, whitespace =
             match options.duplicateSectionRule with
@@ -370,15 +370,15 @@ let parse (options: Options) tokens =
                 let out =
                     existingChildren
                     |> List.rev
-                    |> List.skipWhile (function TriviaNode (Whitespace _) -> true | _ -> false)
+                    |> List.skipWhile Node.isWhitespace
                     |> List.rev
                 out, []
             | MergeDuplicateSectionIntoOriginal ->
                 let revChildren = List.rev existingChildren
-                let whitespace = List.takeWhile isWhitespace revChildren
+                let whitespace = List.takeWhile Node.isWhitespace revChildren
                 let out =
                     revChildren
-                    |> List.skipWhile isWhitespace
+                    |> List.skipWhile Node.isWhitespace
                     |> List.rev
                 out, whitespace
             | _ ->
@@ -391,7 +391,7 @@ let parse (options: Options) tokens =
             | MergeDuplicateSectionIntoOriginal ->
                 duplicateChildren
                 |> List.rev
-                |> List.skipWhile (function TriviaNode (Whitespace _) -> true | _ -> false)
+                |> List.skipWhile Node.isWhitespace
                 |> List.rev
                 |> List.filter (function SectionHeadingNode _ -> false | _ -> true)
 

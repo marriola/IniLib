@@ -59,8 +59,6 @@ module Configuration =
 
     let empty = Configuration (RootNode [], SectionMap Map.empty)
 
-    let private isNodeReplaceable = function ReplaceableTokenNode _ -> true | _ -> false
-
     let private toMap options (RootNode children) =
         let getKeys nodes =
             let rec getKeys' addedKeys out nodes =
@@ -69,7 +67,7 @@ module Configuration =
                     out
                     |> List.rev
                     |> List.groupBy fst
-                    |> List.map (fun ((key, value) as x) -> key, List.map snd value)
+                    |> List.map (fun (key, value) -> key, List.map snd value)
                     |> Map.ofList
                     |> KeyMap
 
@@ -80,7 +78,7 @@ module Configuration =
                         match options.duplicateKeyRule with
                         | DuplicateKeyReplacesValue
                         | DisallowDuplicateKeys when Set.contains name addedKeys ->
-                            List.map (fun ((n, _) as oldEntry) -> if n = name then newEntry else oldEntry) out
+                            List.replaceWhen (fst >> (=) name) newEntry out
                         | _ ->
                             newEntry :: out
 
@@ -103,14 +101,16 @@ module Configuration =
                 let getSectionName = fst
                 let nextOut =
                     if List.exists (getSectionName >> (=) name) out then
-                        out |> List.map (fun ((n, pair) as entry) ->
+                        // Add keys for this section to existing map
+                        out
+                        |> List.map (fun ((n, (keys1, nodes1)) as entry) ->
                             if n = name then
-                                let keys1, nodes1 = pair
                                 let keys2 = getKeys children
                                 (name, (keys1 + keys2, sectionNode :: nodes1))
                             else
                                 entry)
                     else
+                        // Create map for this section
                         (name, (getKeys children, [ sectionNode ])) :: out
                 getSections' nextOut rest
 
@@ -267,12 +267,12 @@ module Configuration =
             // Single key already exists, replace value and existing text nodes
             let section = dic.[sectionName]
             let keyNode::_ = section.GetNodes(keyName)
-            let target = List.filter isNodeReplaceable (getKeyNodeChildren keyNode)
+            let target = List.filter Node.isReplaceable (getKeyNodeChildren keyNode)
             let line, column = Node.position target.[0]
 
             // Create new token node and replace original nodes
             let newText = NodeBuilder.keyValueText options value
-            let newTree = Node.replace isNodeReplaceable options target newText tree
+            let newTree = Node.replace Node.isReplaceable options target newText tree
             let newDic = toMap options newTree
 
             Configuration (newTree, newDic)
@@ -418,14 +418,14 @@ module Configuration =
                 let sectionHeadingText =
                     match sectionNode with
                     | SectionNode (name, SectionHeadingNode (_, children)::_) ->
-                        List.filter isNodeReplaceable children
+                        List.filter Node.isReplaceable children
 
                 let (SectionNode (_, sectionChildren)) = sectionNode
 
                 // Replace section heading name and rebuild configuration
                 let newText = [ReplaceableTokenNode (Text (newName, 0, 0))]
                 let newSection = SectionNode (newName, sectionChildren)
-                let newSection = Node.replace isNodeReplaceable options sectionHeadingText newText newSection
+                let newSection = Node.replace Node.isReplaceable options sectionHeadingText newText newSection
                 Node.replace ((=) sectionNode) options [sectionNode] [newSection] tree)
 
         let newDic = toMap options newTree
@@ -451,8 +451,8 @@ module Configuration =
                     (fun tree node ->
                         match node with
                         | KeyNode (oldName, _, KeyNameNode (_, children)::_) when oldName = keyName ->
-                            let keyNameText = List.filter isNodeReplaceable children
-                            Node.replace isNodeReplaceable options keyNameText newText tree
+                            let keyNameText = List.filter Node.isReplaceable children
+                            Node.replace Node.isReplaceable options keyNameText newText tree
                         | _ ->
                             tree))
             
@@ -514,11 +514,11 @@ module Configuration =
                     let keyNameNodeStripped =
                         keyNameChildren
                         |> List.rev
-                        |> List.skipWhile (function TriviaNode (Whitespace _) -> true | _ -> false)
+                        |> List.skipWhile Node.isWhitespace
                         |> List.rev
                     let keyValueNodeStripped =
                         keyValueChildren
-                        |> List.skipWhile (function TriviaNode (Whitespace _) -> true | _ -> false)
+                        |> List.skipWhile Node.isWhitespace
                     let assignmentNode =
                         match preferredAssignmentChar with
                         | Some c -> [ TokenNode (Assignment (c, 0, 0)) ]

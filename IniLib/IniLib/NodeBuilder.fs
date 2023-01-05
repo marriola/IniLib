@@ -10,15 +10,12 @@ let keyValueText options value =
     let quote =
         match options.quotationRule with
         | AlwaysUseQuotation ->
-            Some (ReplaceableTokenNode (Quote (0, 0)))
+            [ ReplaceableTokenNode (Quote (0, 0)) ]
         | UseQuotation when RE_LEADING_OR_TRAILING_WHITESPACE.IsMatch(value) ->
-            Some (ReplaceableTokenNode (Quote (0, 0)))
+            [ ReplaceableTokenNode (Quote (0, 0)) ]
         | _ ->
-            None
-    [ quote
-      Some (ReplaceableTokenNode (Text (value, 0, 0)))
-      quote ]
-    |> List.choose id
+            []
+    quote @ [ ReplaceableTokenNode (Text (value, 0, 0)) ] @ quote
 
 let private escapes =
     Parser.escapeCodeToCharacter
@@ -30,16 +27,16 @@ let private escape s =
     (s, escapes)
     ||> List.fold (fun s (escapeCode, escapedChar) -> String.replace (string escapedChar) ("\\" + string escapeCode) s)
 
-let private escapeNode (KeyNameNode (name, children) as keyNameNode) =
-    let prologue = children |> List.takeWhile (function ReplaceableTokenNode _ -> false | _ -> true)
-    let epilogue = children |> List.rev |> List.takeWhile (function ReplaceableTokenNode _ -> false | _ -> true) |> List.rev
-    let nameText = ReplaceableTokenNode (Text (escape name, 0, 0))
-    KeyNameNode (name, prologue @ [nameText] @ epilogue)
+let private escapeNode (KeyNameNode (name, children)) =
+    let prologue = children |> List.takeWhile Node.isNotReplaceable
+    let epilogue = children |> List.rev |> List.takeWhile Node.isNotReplaceable |> List.rev
+    let nameText = [ ReplaceableTokenNode (Text (escape name, 0, 0)) ]
+    KeyNameNode (name, prologue @ nameText @ epilogue)
 
-let private quoteNode (KeyNameNode (name, children) as keyNameNode) =
-    let prologue = children |> List.takeWhile (function ReplaceableTokenNode _ -> false | _ -> true)
-    let nameText = children |> List.filter (function ReplaceableTokenNode _ -> true | _ -> false)
-    let epilogue = children |> List.rev |> List.takeWhile (function ReplaceableTokenNode _ -> false | _ -> true) |> List.rev
+let private quoteNode (KeyNameNode (name, children)) =
+    let prologue = children |> List.takeWhile Node.isNotReplaceable
+    let nameText = children |> List.filter Node.isReplaceable
+    let epilogue = children |> List.rev |> List.takeWhile Node.isNotReplaceable |> List.rev
     let quote = [ ReplaceableTokenNode (Quote (0, 0)) ]
     KeyNameNode (name, prologue @ quote @ nameText @ quote @ epilogue)
 
@@ -78,14 +75,10 @@ let key options name value =
 
     let assignmentToken =
         match options.nameValueDelimiterRule with
-        | EqualsDelimiter -> Some (TokenNode (Assignment ('=', 0, 0)))
-        | ColonDelimiter -> Some (TokenNode (Assignment (':', 0, 0)))
-        | NoDelimiter -> None
+        | EqualsDelimiter -> [ TokenNode (Assignment ('=', 0, 0)) ]
+        | ColonDelimiter -> [ TokenNode (Assignment (':', 0, 0)) ]
+        | NoDelimiter -> []
 
-    let children = [
-        Some (sanitize options (keyName name))
-        assignmentToken
-        Some (keyValue value)
-    ]
+    let children = [ sanitize options (keyName name) ] @ assignmentToken @ [ keyValue value ]
 
-    KeyNode (name, value, List.choose id children)
+    KeyNode (name, value, children)

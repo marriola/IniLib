@@ -75,13 +75,13 @@ module Node =
 
     let addChild child node =
         match node with
-        | RootNode children -> RootNode (children @ [node])
-        | SectionHeadingNode (name, children) -> SectionHeadingNode (name, children @ [node])
-        | SectionNode (name, children) -> SectionNode (name, children @ [node])
-        | KeyNode (name, value, children) -> KeyNode (name, value, children @ [node])
-        | KeyNameNode (name, children) -> KeyNameNode (name, children @ [node])
-        | KeyValueNode (value, children) -> KeyValueNode (value, children @ [node])
-        | CommentNode (text, children) -> CommentNode (text, children @ [node])
+        | RootNode children -> RootNode (children @ [child])
+        | SectionHeadingNode (name, children) -> SectionHeadingNode (name, children @ [child])
+        | SectionNode (name, children) -> SectionNode (name, children @ [child])
+        | KeyNode (name, value, children) -> KeyNode (name, value, children @ [child])
+        | KeyNameNode (name, children) -> KeyNameNode (name, children @ [child])
+        | KeyValueNode (value, children) -> KeyValueNode (value, children @ [child])
+        | CommentNode (text, children) -> CommentNode (text, children @ [child])
         | _ -> node
 
     let internal insertNewlinesIfNeeded options nodes =
@@ -98,10 +98,14 @@ module Node =
         
         insertNewlinesIfNeeded' [] nodes
 
+    let inline internal isWhitespace node = match node with TriviaNode (Whitespace _) -> true | _ -> false
+    let inline internal isReplaceable node = match node with ReplaceableTokenNode _ -> true | _ -> false
+    let internal isNotReplaceable = (isReplaceable >> not)
+
     /// <summary>
     /// Replaces a list of target nodes with a list of replacement nodes in the tree and sets all token positions.
     /// </summary>
-    let replace predicate options target replacement tree =
+    let internal replace predicate options target replacement tree =
         let joinReplaceableNodeText nodes =
             nodes
             |> List.choose (function ReplaceableTokenNode _ as n -> Some n | _ -> None)

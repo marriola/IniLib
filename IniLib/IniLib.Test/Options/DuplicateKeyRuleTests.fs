@@ -34,10 +34,7 @@ module DuplicateKeyRuleTests =
                     foo = 1\n\
                     foo = 0"
         let config = Configuration.fromText options text
-        let fooValues =
-            config
-            |> Configuration.getMultiValueNodes "Section 1" "foo"
-            |> List.choose (function KeyNode (_, value, _) -> Some value | _ -> None)
+        let fooValues = Configuration.getMultiValues "Section 1" "foo" config
         let expected = ["9"; "0"; "2"; "1"; "0"]
         Assert.Equal<string>(expected, fooValues)
 
