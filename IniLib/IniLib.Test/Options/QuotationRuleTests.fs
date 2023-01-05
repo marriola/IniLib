@@ -16,7 +16,7 @@ module QuotationRuleTests =
         Assert.Equal(expectedValue, actualValue)
 
     [<Fact>]
-    let ``Quotation marks are not included in key value when enabled`` () =
+    let ``Quotation marks are parsed and not part of key value when enabled`` () =
         let options = Options.defaultOptions.WithQuotationRule UseQuotation
         let text = "[Section 1]\n\
                     foo = \"bar\""
@@ -24,6 +24,27 @@ module QuotationRuleTests =
         let expectedValue = "bar"
         let actualValue = Configuration.get "Section 1" "foo" config
         Assert.Equal(expectedValue, actualValue)
+
+    [<Fact>]
+    let ``Quotation marks are not part of the key value when adding a new key`` () =
+        let options = Options.defaultOptions.WithQuotationRule UseQuotation
+        let config = Configuration.add options "hey vegeta" "power level" "nine thousand and one" Configuration.empty
+        let actual = Configuration.get "hey vegeta" "power level" config
+        let expected = "nine thousand and one"
+        Assert.Equal(expected, actual)
+
+    [<Fact>]
+    let ``Quotation marks are not part of the key value when changing an existing key`` () =
+        let options = Options.defaultOptions.WithQuotationRule UseQuotation
+        let text = "[hey vegeta]\n\
+                    power level = 9000"
+        let config = 
+            text
+            |> Configuration.fromText options
+            |> Configuration.add options "hey vegeta" "power level" "nine thousand and one"
+        let actual = Configuration.get "hey vegeta" "power level" config
+        let expected = "nine thousand and one"
+        Assert.Equal(expected, actual)
 
     [<Fact>]
     let ``Quotation marks preserve leading and trailing whitespace in key value when enabled`` () =

@@ -108,7 +108,7 @@ module Node =
     let internal replace predicate options target replacement tree =
         let joinReplaceableNodeText nodes =
             nodes
-            |> List.choose (function ReplaceableTokenNode _ as n -> Some n | _ -> None)
+            |> List.choose (function ReplaceableTokenNode (Text _) | ReplaceableTokenNode (Whitespace _) as n -> Some n | _ -> None)
             |> List.map (toText options)
             |> String.concat ""
 
