@@ -398,9 +398,10 @@ internal class Program
 
         var sectionName = SectionName ?? "<global>";
         var result = config.TryGetSectionNode(sectionName);
-        if (result?.Item1?.TryGetValue(KeyName, out string value) == true)
+        if (result?.Item1?.TryGetValues(KeyName, out var values) == true)
         {
-            Console.Write(string.Join(", ", config[sectionName][KeyName]));
+            Console.Write(string.Join(Environment.NewLine, values));
+
             if (ShowNewline)
             {
                 Console.WriteLine();
