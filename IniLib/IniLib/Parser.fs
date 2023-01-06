@@ -171,8 +171,14 @@ let parse (options: Options) tokens =
 
             // Closing quote
             | (Some name), (Quote _ as quoteToken)::rest when quote <> None ->
-                let name = name.Trim()
-                let keyNameNode = KeyNameNode (name, TokenNode quoteToken :: consumedTokens |> List.rev)
+                // Consume rest of whitespace
+                let whitespace =
+                    rest
+                    |> List.takeWhile (function Whitespace _ -> true | _ -> false)
+                    |> List.map TriviaNode
+                let rest = rest[whitespace.Length..]
+
+                let keyNameNode = KeyNameNode (name, whitespace @ TokenNode quoteToken :: consumedTokens |> List.rev)
                 name, keyNameNode, rest
 
             // Assignment token - we're done
