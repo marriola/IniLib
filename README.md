@@ -64,9 +64,9 @@ let config =
 | Function                                           | Return type   | Description                                                                               |
 | -------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------- |
 | **ofList** *options xs*                            | Configuration | Generates a configuration from a list of tuples of section name, key name, and value.     |
-| **ofSeq** *options seq*                            | Configuration | Generates a configuration from a sequence of tuples of section name, key name, and value. |                              |
+| **ofSeq** *options seq*                            | Configuration | Generates a configuration from a sequence of tuples of section name, key name, and value. |
 | **fromFile** *options path*                        | Configuration | Generates a configuration from a file.                                                    |
-| **fromText** *options text*                        | Configuration | Generates a configuration from a text reader.                                             |
+| **fromText** *options text*                        | Configuration | Generates a configuration from text.                                                      |
 | **fromStream** *options stream*                    | Configuration | Generates a configuration from a stream.                                                  |
 | **fromStreamReader** *options streamReader*        | Configuration | Generates a configuration from a stream reader.                                           |
 | **fromTextReader** *options textReader*            | Configuration | Generates a configuration from a text reader.                                             |
@@ -79,6 +79,7 @@ let config =
 | **writeToFile** *options path config*              | unit          | Writes a configuration to a file.          |
 | **writeToStream** *options stream*                 | unit          | Writes a configuration to a stream.        |
 | **writeToStreamWriter** *options streamWriter*     | unit          | Writes a configuration to a stream writer. |
+| **writeToTextWriter** *options streamWriter*       | unit          | Writes a configuration to a text writer.   |
 
 ### Example
 
@@ -246,12 +247,12 @@ var options = Options.defaultOptions
 
 `DuplicateSectionRule` controls parser behavior when it encounters duplicate sections.
 
-| Rule option                       | Description                                                                                                                                                                                                                  |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DisallowDuplicateSections         | Disallows duplicate sections and throws an exception when the parser encounters one.                                                                                                                                         |
-| AllowDuplicateSections            | Allows duplicate sections. Additional sections parsed replace the original section in the map, but are preserved when output to text.                                                                                        |
-| MergeDuplicateSectionIntoOriginal | Allows duplicate sections. When a duplicate section is encountered, its keys are appended to the original section. The duplicate is not preserved when output to text.                                                       |
-| MergeOriginalSectionIntoDuplicate | Allows duplicate sections. When a duplicate section is encountered, the original section is removed from its original position merged into the duplicate section. The original section is not preserved when output to text. |
+| Rule option                       | Description                                                                                                                                                                                                                                   |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DisallowDuplicateSections         | Disallows duplicate sections and throws an exception when the parser encounters one.                                                                                                                                                          |
+| AllowDuplicateSections            | Allows duplicate sections. Additional sections parsed replace the original section in the map, but are preserved when output to text.                                                                                                         |
+| MergeDuplicateSectionIntoOriginal | Allows duplicate sections. When a duplicate section is encountered, its keys are appended to the original section. The duplicate is not preserved when output to text.                                                                        |
+| MergeOriginalSectionIntoDuplicate | Allows duplicate sections. When a duplicate section is encountered, the original section is removed from its original position and its keys are appended to the duplicate section. The original section is not preserved when output to text. |
 
 ### EscapeSequenceRule
 
@@ -260,8 +261,8 @@ var options = Options.defaultOptions
 | Rule option                           | Description                                                                                                                                                  |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | IgnoreEscapeSequences                 | Escape sequences are ignored and parsed as literal text.                                                                                                     |
-| UseEscapeSequences                    | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:`, `\&blank;` and `\xHHHH`                                             |
-| UseEscapeSequencesAndLineContinuation | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:`, `\&blank;` and `\xHHHH`, as well as the line continuation token `\` |
+| UseEscapeSequences                    | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:`, `\ ` and `\xHHHH`                                             |
+| UseEscapeSequencesAndLineContinuation | Accepts the escape sequences `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\"`, `\'`, `\#`, `\:`, `\ ` and `\xHHHH`, as well as the line continuation token `\` |
 
 ### GlobalKeysRule
 

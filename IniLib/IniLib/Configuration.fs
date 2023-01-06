@@ -564,6 +564,10 @@ module Configuration =
     let writeToStreamWriter options (streamWriter: StreamWriter) config =
         streamWriter.Write(toText options config)
 
+    /// Writes a configuration to a text writer.
+    let writeToTextWriter options (textWriter: TextWriter) config =
+        textWriter.Write(toText options config)
+
     /// Writes a configuration to a stream.
     let writeToStream options (encoding: System.Text.Encoding) (stream: Stream) config =
         let text = toText options config
