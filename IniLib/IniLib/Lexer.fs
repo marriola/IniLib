@@ -8,6 +8,7 @@ let lex options text =
         | NoDelimiter -> Set.empty
         | EqualsDelimiter -> set "="
         | ColonDelimiter -> set ":"
+        | EqualsOrColonDelimiter -> set "=:"
 
     let commentIndicators =
         match options.commentRule with
