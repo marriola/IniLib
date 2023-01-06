@@ -3,19 +3,8 @@
 open System.Text.RegularExpressions
 open IniLib.Utilities
 
-let private RE_LEADING_OR_TRAILING_WHITESPACE = new Regex(["\\s+.*"; ".*?\\s+"; "\\s+.*?\\s+"] |> String.concat "|")
 let private RE_WHITESPACE = new Regex("\\s");
-
-let keyValueText options value =
-    let quote =
-        match options.quotationRule with
-        | AlwaysUseQuotation ->
-            [ ReplaceableTokenNode (Quote (0, 0)) ]
-        | UseQuotation when RE_LEADING_OR_TRAILING_WHITESPACE.IsMatch(value) ->
-            [ ReplaceableTokenNode (Quote (0, 0)) ]
-        | _ ->
-            []
-    quote @ [ ReplaceableTokenNode (Text (value, 0, 0)) ] @ quote
+let private RE_ESCAPE_CHARACTERS = new Regex("[\a\b\f\n\r\t\v\"\'\\#: ]")
 
 let private escapes =
     Parser.escapeCodeToCharacter
@@ -27,58 +16,89 @@ let private escape s =
     (s, escapes)
     ||> List.fold (fun s (escapeCode, escapedChar) -> String.replace (string escapedChar) ("\\" + string escapeCode) s)
 
-let private escapeNode (KeyNameNode (name, children)) =
-    let prologue = children |> List.takeWhile Node.isNotReplaceable
-    let epilogue = children |> List.rev |> List.takeWhile Node.isNotReplaceable |> List.rev
-    let nameText = [ ReplaceableTokenNode (Text (escape name, 0, 0)) ]
-    KeyNameNode (name, prologue @ nameText @ epilogue)
+let private escapeNode constructor node text children =
+    if RE_ESCAPE_CHARACTERS.IsMatch(text) then
+        let prologue = children |> List.takeWhile Node.isNotReplaceable
+        let epilogue = children |> List.rev |> List.takeWhile Node.isNotReplaceable |> List.rev
+        let nameText = [ ReplaceableTokenNode (Text (escape text, 0, 0)) ]
+        constructor (text, prologue @ nameText @ epilogue)
+    else
+        node
 
-let private quoteNode (KeyNameNode (name, children)) =
-    let prologue = children |> List.takeWhile Node.isNotReplaceable
-    let nameText = children |> List.filter Node.isReplaceable
-    let epilogue = children |> List.rev |> List.takeWhile Node.isNotReplaceable |> List.rev
-    let quote = [ ReplaceableTokenNode (Quote (0, 0)) ]
-    KeyNameNode (name, prologue @ quote @ nameText @ quote @ epilogue)
+let private quoteNode constructor node text children =
+    match children with
+    | ReplaceableTokenNode (Quote _) :: _ :: ReplaceableTokenNode (Quote _) :: _ ->
+        node
 
-/// Sanitizes the key name when using the NoDelimiter rule. If the key name contains whitespace, it is either quoted or escaped,
-/// depending on the quotation rule and escape sequence rule chosen.
-let sanitize options (KeyNameNode (name, _) as keyNameNode) =
-    let hasWhitespace = RE_WHITESPACE.IsMatch(name)
-    match options with
-    | { nameValueDelimiterRule = NoDelimiter; quotationRule = AlwaysUseQuotation } -> quoteNode keyNameNode
-    | { nameValueDelimiterRule = NoDelimiter; quotationRule = UseQuotation } when hasWhitespace -> quoteNode keyNameNode
-    | { nameValueDelimiterRule = NoDelimiter; escapeSequenceRule = UseEscapeSequencesAndLineContinuation }
-    | { nameValueDelimiterRule = NoDelimiter; escapeSequenceRule = UseEscapeSequences } when hasWhitespace -> escapeNode keyNameNode
-    | _ -> keyNameNode
+    | _ ->
+        let prologue = children |> List.takeWhile Node.isNotReplaceable
+        let nameText = children |> List.filter Node.isReplaceable
+        let epilogue = children |> List.rev |> List.takeWhile Node.isNotReplaceable |> List.rev
+        let quote = [ ReplaceableTokenNode (Quote (0, 0)) ]
+        constructor (text, prologue @ quote @ nameText @ quote @ epilogue)
+
+/// Sanitizes the key name or value to prevent a parsing error. If the text contains a whitespace,
+/// it is wrapped in quotation marks if the quotation rule is UseQuotation or AlwaysUseQuotation,
+/// and it is escaped if the escape sequence rule is UseEscapeSequences or UseEscapeSequencesAndLineContinuation.
+let sanitize options node =
+    let constructor, text, children =
+        match node with
+        | KeyNameNode (text, children) -> KeyNameNode, text, children
+        | KeyValueNode (text, children) -> KeyValueNode, text, children
+        | _ -> failwith $"Expected KeyNameNode or KeyValueNode, got %O{node}"
+
+    let hasWhitespace = RE_WHITESPACE.IsMatch(text)
+    
+    let maybeQuotedNode =
+        match options.quotationRule, node with
+        | AlwaysUseQuotation, KeyValueNode _ ->
+            quoteNode constructor node text children
+        | AlwaysUseQuotation, _ | UseQuotation, _ when hasWhitespace ->
+            quoteNode constructor node text children
+        | _ ->
+            node
+
+    match options.escapeSequenceRule with
+    | UseEscapeSequencesAndLineContinuation | UseEscapeSequences when hasWhitespace ->
+        escapeNode constructor maybeQuotedNode text children
+    | _ ->
+        maybeQuotedNode
+
+let keyName options name =
+    let whitespace =
+        match options.nameValueDelimiterSpacingRule with
+        | LeftOnly
+        | BothSides -> [ TriviaNode (Whitespace (" ", 0, 0)) ]
+        | _ -> []
+
+    KeyNameNode (name, [ ReplaceableTokenNode (Text (name, 0, 0)) ] @ whitespace)
+    |> sanitize options
+
+let keyValue options value =
+    let whitespace =
+        match options.nameValueDelimiterSpacingRule with
+        | RightOnly
+        | BothSides -> [TriviaNode (Whitespace (" ", 0, 0))]
+        | _ -> []
+    let children = [
+        whitespace
+        [ ReplaceableTokenNode (Text (value, 0, 0)) ]
+        [ TriviaNode (Text (options.newlineRule.toText(), 0, 0)) ]
+    ]
+
+    KeyValueNode (value, List.collect id children)
+    |> sanitize options
 
 let key options name value =
-    let keyName name =
-        let whitespace =
-            match options.nameValueDelimiterSpacingRule with
-            | LeftOnly
-            | BothSides -> [ TriviaNode (Whitespace (" ", 0, 0)) ]
-            | _ -> []
-        KeyNameNode (name, [ ReplaceableTokenNode (Text (name, 0, 0)) ] @ whitespace)
-
-    let keyValue value =
-        let whitespace =
-            match options.nameValueDelimiterSpacingRule with
-            | RightOnly
-            | BothSides -> [TriviaNode (Whitespace (" ", 0, 0))]
-            | _ -> []
-        let children = [
-            whitespace
-            keyValueText options value
-            [TriviaNode (Text (options.newlineRule.toText(), 0, 0))]
-        ]
-        KeyValueNode (value, List.collect id children)
-
     let assignmentToken =
-        match options.nameValueDelimiterRule with
-        | EqualsDelimiter -> [ TokenNode (Assignment ('=', 0, 0)) ]
-        | ColonDelimiter -> [ TokenNode (Assignment (':', 0, 0)) ]
-        | NoDelimiter -> []
+        match options.nameValueDelimiterPreferenceRule with
+        | PreferEqualsDelimiter -> [ TokenNode (Assignment ('=', 0, 0)) ]
+        | PreferColonDelimiter -> [ TokenNode (Assignment (':', 0, 0)) ]
+        | PreferNoDelimiter -> []
 
-    let children = [ sanitize options (keyName name) ] @ assignmentToken @ [ keyValue value ]
+    let children =
+        [ keyName options name ]
+        @ assignmentToken
+        @ [ keyValue options value ]
 
     KeyNode (name, value, children)

@@ -19,8 +19,8 @@ with
           escapeSequenceRule = IgnoreEscapeSequences
           globalKeysRule = DisallowGlobalKeys
           nameValueDelimiterRule = EqualsDelimiter
-          nameValueDelimiterPreferenceRule = NameValueDelimiterPreferenceRule.DefaultPreferenceRule EqualsDelimiter
-          nameValueDelimiterSpacingRule = NameValueDelimiterSpacingRule.DefaultSpacingRule EqualsDelimiter
+          nameValueDelimiterPreferenceRule = NameValueDelimiterPreferenceRule.DefaultFor EqualsDelimiter
+          nameValueDelimiterSpacingRule = NameValueDelimiterSpacingRule.DefaultFor EqualsDelimiter
           newlineRule = DefaultEnvironmentNewline
           quotationRule = IgnoreQuotation }
 
@@ -36,8 +36,8 @@ with
 
     member this.WithNameValueDelimiterRule nameValueDelimiterRule =
         { this with nameValueDelimiterRule = nameValueDelimiterRule
-                    nameValueDelimiterPreferenceRule = NameValueDelimiterPreferenceRule.DefaultPreferenceRule nameValueDelimiterRule
-                    nameValueDelimiterSpacingRule = NameValueDelimiterSpacingRule.DefaultSpacingRule nameValueDelimiterRule }
+                    nameValueDelimiterPreferenceRule = NameValueDelimiterPreferenceRule.DefaultFor nameValueDelimiterRule
+                    nameValueDelimiterSpacingRule = NameValueDelimiterSpacingRule.DefaultFor nameValueDelimiterRule }
 
     member this.WithNameValueDelimiterSpacingRule nameValueDelimiterSpacingRule = { this with nameValueDelimiterSpacingRule = nameValueDelimiterSpacingRule }
 
@@ -59,8 +59,8 @@ with
 
     static member withNameValueDelimiterRule nameValueDelimiterRule options =
         { options with nameValueDelimiterRule = nameValueDelimiterRule
-                       nameValueDelimiterPreferenceRule = NameValueDelimiterPreferenceRule.DefaultPreferenceRule nameValueDelimiterRule
-                       nameValueDelimiterSpacingRule = NameValueDelimiterSpacingRule.DefaultSpacingRule nameValueDelimiterRule }
+                       nameValueDelimiterPreferenceRule = NameValueDelimiterPreferenceRule.DefaultFor nameValueDelimiterRule
+                       nameValueDelimiterSpacingRule = NameValueDelimiterSpacingRule.DefaultFor nameValueDelimiterRule }
 
     static member withNameValueDelimiterSpacingRule nameValueDelimiterSpacingRule options = { options with nameValueDelimiterSpacingRule = nameValueDelimiterSpacingRule }
 
@@ -101,7 +101,7 @@ and NameValueDelimiterPreferenceRule =
     | PreferColonDelimiter
     | PreferNoDelimiter
 with
-    static member DefaultPreferenceRule = function
+    static member DefaultFor = function
         | EqualsOrColonDelimiter
         | EqualsDelimiter -> PreferEqualsDelimiter
         | ColonDelimiter -> PreferColonDelimiter
@@ -112,7 +112,7 @@ and NameValueDelimiterSpacingRule =
     | LeftOnly
     | NoSpacing
 with
-    static member DefaultSpacingRule = function
+    static member DefaultFor = function
         | EqualsDelimiter -> BothSides
         | ColonDelimiter -> RightOnly
         | EqualsOrColonDelimiter -> BothSides

@@ -6,6 +6,29 @@ module QuotationRuleTests =
     open Xunit
 
     [<Fact>]
+    let ``Key name may be quoted with delimiter rule EqualsDelimiter`` () =
+        let options = Options.defaultOptions.WithQuotationRule UseQuotation
+        let text = "[Section 1]\n\
+                    \"prince vegeta\" = 9000"
+        let config = Configuration.fromText options text
+        let expectedValue = Some "9000"
+        let actualValue = Configuration.tryGet "Section 1" "prince vegeta" config
+        Assert.Equal(expectedValue, actualValue)
+
+    [<Fact>]
+    let ``Key name may be quoted with delimiter rule NoDelimiter`` () =
+        let options =
+            Options.defaultOptions
+            |> Options.withQuotationRule UseQuotation
+            |> Options.withNameValueDelimiterRule NoDelimiter
+        let text = "[Section 1]\n\
+                    \"bar mitzvah\" 9001"
+        let config = Configuration.fromText options text
+        let expectedValue = "9001"
+        let actualValue = Configuration.get "Section 1" "bar mitzvah" config
+        Assert.Equal(expectedValue, actualValue)
+
+    [<Fact>]
     let ``Quotation marks are parsed literally when not enabled`` () =
         let options = Options.defaultOptions
         let text = "[Section 1]\n\
@@ -104,19 +127,6 @@ module QuotationRuleTests =
         Assert.Equal(expected, actual)
 
     [<Fact>]
-    let ``Key name may be quoted`` () =
-        let options =
-            Options.defaultOptions
-            |> Options.withQuotationRule UseQuotation
-            |> Options.withNameValueDelimiterRule NoDelimiter
-        let text = "[Section 1]\n\
-                    \"bar mitzvah\" 9001"
-        let config = Configuration.fromText options text
-        let expectedValue = "9001"
-        let actualValue = Configuration.get "Section 1" "bar mitzvah" config
-        Assert.Equal(expectedValue, actualValue)
-
-    [<Fact>]
     let ``Adding key name with whitespace in it causes key name to be quoted`` () =
         let options =
             Options.defaultOptions
@@ -129,6 +139,39 @@ module QuotationRuleTests =
         let text = Configuration.toText options config
         let expected = "[Section 1]\n\
                         \"bar mitzvah\" 9001\n\
+                        \n"
+        Assert.Equal(expected, text)
+
+    [<Fact>]
+    let ``Adding key value with whitespace in it causes key value to be quoted`` () =
+        let options =
+            Options.defaultOptions
+            |> Options.withQuotationRule UseQuotation
+            |> Options.withNameValueDelimiterRule NoDelimiter
+            |> Options.withNewlineRule LfNewline
+        let config =
+            Configuration.empty
+            |> Configuration.add options "Section 1" "goku" "nine thousand and one"
+        let text = Configuration.toText options config
+        let expected = "[Section 1]\n\
+                        goku \"nine thousand and one\"\n\
+                        \n"
+        Assert.Equal(expected, text)
+
+    [<Fact>]
+    let ``Replacing key value with whitespace in it causes key value to be quoted`` () =
+        let options =
+            Options.defaultOptions
+            |> Options.withQuotationRule UseQuotation
+            |> Options.withNameValueDelimiterRule NoDelimiter
+            |> Options.withNewlineRule LfNewline
+        let config =
+            Configuration.empty
+            |> Configuration.add options "Section 1" "goku" "9001"
+            |> Configuration.add options "Section 1" "goku" "nine thousand and one"
+        let text = Configuration.toText options config
+        let expected = "[Section 1]\n\
+                        goku \"nine thousand and one\"\n\
                         \n"
         Assert.Equal(expected, text)
 

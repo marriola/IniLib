@@ -73,12 +73,12 @@ module ConfigurationTests =
         let section, key, value = "foo", "bar", "baz"
         let config = Configuration.add Options.defaultOptions section key value Configuration.empty
         let fetchedValue = Configuration.get section key config
-        Assert.Equal(fetchedValue, value)
+        Assert.Equal(value, fetchedValue)
 
         let value = "quux"
         let config = Configuration.add Options.defaultOptions section key value config
         let fetchedValue = Configuration.get section key config
-        Assert.Equal(fetchedValue, value)
+        Assert.Equal(value, fetchedValue)
 
     [<Fact>]
     let ``Replacing key value preserves existing whitespace`` () =
@@ -89,8 +89,10 @@ module ConfigurationTests =
             text
             |> Configuration.fromText options
             |> Configuration.add options "Section 1" "foo" "bear arms"
-        let keyNode = Configuration.getNode "Section 1" "foo" config
-        Assert.Equal("foo = bear arms\t", Node.toText options keyNode)
+        let actual = Configuration.toText options config
+        let expected = "[Section 1]\n\
+                        foo = bear arms\t"
+        Assert.Equal(expected, actual)
 
     [<Fact>]
     let ``Replacing key value preserves comment on same line`` () =

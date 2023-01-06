@@ -268,10 +268,10 @@ module Configuration =
             let section = dic.[sectionName]
             let keyNode::_ = section.GetNodes(keyName)
             let target = List.filter Node.isReplaceable (getKeyNodeChildren keyNode)
-            let line, column = Node.position target.[0]
 
             // Create new token node and replace original nodes
-            let newText = NodeBuilder.keyValueText options value
+            let (KeyValueNode (_, keyValueChildren)) = NodeBuilder.keyValue options value
+            let newText = List.filter Node.isReplaceable keyValueChildren
             let newTree = Node.replace Node.isReplaceable options target newText tree
             let newDic = toMap options newTree
 
@@ -498,7 +498,9 @@ module Configuration =
                     | PreferEqualsDelimiter -> Some '='
                     | PreferColonDelimiter -> Some ':'
                     | PreferNoDelimiter -> None
-                if preferredAssignmentChar = maybeAssignmentChar then
+
+                if preferredAssignmentChar = maybeAssignmentChar
+                    || options.nameValueDelimiterRule = EqualsOrColonDelimiter && maybeAssignmentChar <> None then
                     keyNode
                 else
                     let leftWhitespace =
@@ -516,16 +518,18 @@ module Configuration =
                         |> List.rev
                         |> List.skipWhile Node.isWhitespace
                         |> List.rev
-                    let keyValueNodeStripped =
-                        keyValueChildren
-                        |> List.skipWhile Node.isWhitespace
+                    let keyNameNode =
+                        let node = KeyNameNode (name, keyNameNodeStripped @ leftWhitespace)
+                        if options.nameValueDelimiterRule = NoDelimiter then NodeBuilder.sanitize options node else node
                     let assignmentNode =
                         match preferredAssignmentChar with
                         | Some c -> [ TokenNode (Assignment (c, 0, 0)) ]
                         | None -> []
-                    let keyNameNode = KeyNameNode (name, keyNameNodeStripped @ leftWhitespace)
+                    let keyValueNodeStripped =
+                        keyValueChildren
+                        |> List.skipWhile Node.isWhitespace
                     let keyValueNode = KeyValueNode (value, rightWhitespace @ keyValueNodeStripped)
-                    KeyNode (name, value, [ NodeBuilder.sanitize options keyNameNode ] @ assignmentNode @ [ keyValueNode ] @ rest)
+                    KeyNode (name, value, [ keyNameNode ] @ assignmentNode @ [ keyValueNode ] @ rest)
                 
             let newSectionChildren =
                 sectionChildren
