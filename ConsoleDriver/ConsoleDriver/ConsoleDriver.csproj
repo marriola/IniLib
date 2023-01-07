@@ -17,4 +17,19 @@
     <ProjectReference Include="..\..\IniLib\IniLib\IniLib.fsproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="OptionHelpText.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>OptionHelpText.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="OptionHelpText.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>OptionHelpText.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

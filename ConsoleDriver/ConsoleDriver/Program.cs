@@ -1,6 +1,6 @@
-﻿using IniLib;
+﻿using ConsoleDriver;
+using IniLib;
 using IniLib.Wrappers;
-using System.Reflection;
 using Utility.CommandLine;
 using static IniLib.Node;
 
@@ -70,6 +70,42 @@ internal class Program
     private static string? KeyName => Operands?.Count < 4 ? null : Operands?[3];
 
     private static string? Value => Operands?.Count < 5 ? null : Operands?[4];
+
+    private static Dictionary<string, string> OptionHelp = new ()
+    {
+        ["HashAndSemicolonComments"] = OptionHelpText.HashAndSemicolonComments,
+        ["HashComments"] = OptionHelpText.HashComments,
+        ["SemicolonComments"] = OptionHelpText.SemicolonComments,
+        ["DisallowDuplicateKeys"] = OptionHelpText.DisallowDuplicateKeys,
+        ["DuplicateKeyReplacesValue"] = OptionHelpText.DuplicateKeyReplacesValue,
+        ["DuplicateKeyAddsValue"] = OptionHelpText.DuplicateKeyAddsValue,
+        ["DisallowDuplicateSections"] = OptionHelpText.DisallowDuplicateSections,
+        ["AllowDuplicateSections"] = OptionHelpText.AllowDuplicateSections,
+        ["MergeDuplicateSectionIntoOriginal"] = OptionHelpText.MergeDuplicateSectionIntoOriginal,
+        ["MergeOriginalSectionIntoDuplicate"] = OptionHelpText.MergeOriginalSectionIntoDuplicate,
+        ["IgnoreEscapeSequences"] = OptionHelpText.IgnoreEscapeSequences,
+        ["UseEscapeSequences"] = OptionHelpText.UseEscapeSequences,
+        ["UseEscapeSequencesAndLineContinuation"] = OptionHelpText.UseEscapeSequencesAndLineContinuation,
+        ["DisallowGlobalKeys"] = OptionHelpText.DisallowGlobalKeys,
+        ["AllowGlobalKeys"] = OptionHelpText.AllowGlobalKeys,
+        ["EqualsDelimiter"] = OptionHelpText.EqualsDelimiter,
+        ["ColonDelimiter"] = OptionHelpText.ColonDelimiter,
+        ["EqualsOrColonDelimiter"] = OptionHelpText.EqualsOrColonDelimiter,
+        ["NoDelimiter"] = OptionHelpText.NoDelimiter,
+        ["PreferEqualsDelimiter"] = OptionHelpText.PreferEqualsDelimiter,
+        ["PreferColonDelimiter"] = OptionHelpText.PreferColonDelimiter,
+        ["PreferNoDelimiter"] = OptionHelpText.PreferNoDelimiter,
+        ["BothSides"] = OptionHelpText.BothSides,
+        ["LeftOnly"] = OptionHelpText.LeftOnly,
+        ["RightOnly"] = OptionHelpText.RightOnly,
+        ["NoSpacing"] = OptionHelpText.NoSpacing,
+        ["DefaultEnvironmentNewline"] = OptionHelpText.DefaultEnvironmentNewline,
+        ["LfNewLine"] = OptionHelpText.LfNewLine,
+        ["CrLfNewline"] = OptionHelpText.CrLfNewline,
+        ["IgnoreQuotation"] = OptionHelpText.IgnoreQuotation,
+        ["UseQuotation"] = OptionHelpText.UseQuotation,
+        ["AlwaysUseQuotation"] = OptionHelpText.AlwaysUseQuotation
+    };
 
     private static Dictionary<char, List<string>> SwitchToRuleOptions = new()
     {
@@ -237,9 +273,9 @@ internal class Program
         {
             config = InputFile switch
             {
-            "-" => FromConsole(),
-            string path => ConfigurationWrapper.FromFile(path, Options)
-        };
+                "-" => FromConsole(),
+                string path => ConfigurationWrapper.FromFile(path, Options)
+            };
         }
         catch (Exception ex)
         {
@@ -504,6 +540,14 @@ internal class Program
 
         return true;
 
-        void PrintOptions(char key) => SwitchToRuleOptions[key].ForEach(Console.WriteLine);
+        void PrintOptions(char key)
+        {
+            var width = SwitchToRuleOptions[key].Select(x => x.Length).Max() + 3;
+
+            foreach (var option in SwitchToRuleOptions[key])
+            {
+                Console.WriteLine($"{option.PadRight(width)}{OptionHelp[option]}");
+            }
+        }
     }
 }
