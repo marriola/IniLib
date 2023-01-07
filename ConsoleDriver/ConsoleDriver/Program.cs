@@ -431,12 +431,18 @@ internal class Program
 
     private static void ShowUsage(string[] args)
     {
-        var path = System.Reflection.Assembly.GetAssembly(typeof(Program)).Location;
-        var binaryName = Path.GetFileNameWithoutExtension(path);
+        var commandLineArgs = Environment.GetCommandLineArgs();
+        var binaryPath = Path.GetFileNameWithoutExtension(commandLineArgs[0]);
         var helpAttributes = Arguments.GetArgumentInfo(typeof(Program));
-        var optionDescriptions = string.Join(" ", SwitchToOptionDescription.Select(kvp => $"{kvp.Key} [{kvp.Value}]"));
+        var optionDescriptions = string.Join(" ", SwitchToOptionDescription.Select(kvp => $"-{kvp.Key} [{kvp.Value}]"));
 
-        Console.WriteLine($"usage: {binaryName} -c {optionDescriptions} file\n");
+        if (ShowRuleOptions())
+        {
+            return;
+        }
+
+        Console.WriteLine($"usage: {binaryPath} -c {optionDescriptions} file [section] [key] [value]\n");
+        Console.WriteLine($"{binaryPath} -h (-C | -K | -T | -E | -D | -P | -S | -N | -Q) to show rule options\n");
 
         foreach (var item in helpAttributes)
         {
@@ -444,11 +450,58 @@ internal class Program
             var options = SwitchToRuleOptions.ContainsKey(item.ShortName) ? SwitchToRuleOptions[item.ShortName] : new List<string>();
             var result = $"{switches,-35}\t{item.HelpText}";
             Console.WriteLine(result);
-
-            foreach (var option in options)
-            {
-                Console.WriteLine(new String(' ', 43) + "- " + option);
-            }
         }
+    }
+
+    private static bool ShowRuleOptions()
+    {
+        if (CommentRuleText == string.Empty)
+        {
+            PrintOptions('C');
+        }
+        else if (DuplicateKeyRuleText == string.Empty)
+        {
+            PrintOptions('K');
+        }
+        else if (DuplicateSectionRuleText == string.Empty)
+        {
+            PrintOptions('T');
+        }
+        else if (EscapeSequenceRuleText == string.Empty)
+        {
+            PrintOptions('E');
+        }
+        else if (GlobalKeysRuleText == string.Empty)
+        {
+            PrintOptions('G');
+        }
+        else if (NameValueDelimiterRuleText == string.Empty)
+        {
+            PrintOptions('D');
+        }
+        else if (NameValueDelimiterPreferenceRuleText == string.Empty)
+        {
+            PrintOptions('P');
+        }
+        else if (NameValueDelimiterSpacingRuleText == string.Empty)
+        {
+            PrintOptions('S');
+        }
+        else if (NewlineRuleText == string.Empty)
+        {
+            PrintOptions('N');
+        }
+        else if (QuotationRuleText == string.Empty)
+            {
+            PrintOptions('Q');
+            }
+        else
+        {
+            return false;
+        }
+
+        return true;
+
+        void PrintOptions(char key) => SwitchToRuleOptions[key].ForEach(Console.WriteLine);
     }
 }
