@@ -68,21 +68,6 @@ internal class Program
 
     private static string? Value => Operands?.Count < 5 ? null : Operands?[4];
 
-    private static Dictionary<string, string> SwitchToOptionDescription = new()
-    {
-        ["o"] = "output path",
-        ["C"] = "comment rule",
-        ["K"] = "duplicate key rule",
-        ["T"] = "duplicate section rule",
-        ["E"] = "escape sequence rule",
-        ["G"] = "global keys rule",
-        ["D"] = "name-value delimiter rule",
-        ["P"] = "name-value delimiter preference rule",
-        ["S"] = "name-value delimiter spacing rule",
-        ["N"] = "newline rule",
-        ["Q"] = "quotation rule"
-    };
-
     private static Dictionary<char, List<string>> SwitchToRuleOptions = new()
     {
         ['C'] = new() { "HashAndSemicolonComments", "HashComments", "SemicolonComments" },
@@ -434,15 +419,14 @@ internal class Program
         var commandLineArgs = Environment.GetCommandLineArgs();
         var binaryPath = Path.GetFileNameWithoutExtension(commandLineArgs[0]);
         var helpAttributes = Arguments.GetArgumentInfo(typeof(Program));
-        var optionDescriptions = string.Join(" ", SwitchToOptionDescription.Select(kvp => $"-{kvp.Key} [{kvp.Value}]"));
 
         if (ShowRuleOptions())
         {
             return;
         }
 
-        Console.WriteLine($"usage: {binaryPath} -c {optionDescriptions} file [section] [key] [value]\n");
-        Console.WriteLine($"{binaryPath} -h (-C | -K | -T | -E | -D | -P | -S | -N | -Q) to show rule options\n");
+        Console.WriteLine($"usage: {binaryPath} [options] file [section] [key] [value]\n");
+        Console.WriteLine($"{binaryPath} -h (-C | -K | -T | -E | -D | -P | -S | -N | -Q) to show options for rule\n");
 
         foreach (var item in helpAttributes)
         {
