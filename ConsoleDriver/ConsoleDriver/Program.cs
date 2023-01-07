@@ -13,7 +13,7 @@ internal class Program
     private static bool ToStdout { get; set; }
 
     [Argument('o', "out", "The output file path")]
-    private static string OutPath { get; set; }
+    private static string? OutPath { get; set; }
 
     [Argument('n', "newline", "Print newline after value")]
     private static bool ShowNewline { get; set; }
@@ -28,39 +28,39 @@ internal class Program
     private static string? OutputDelimiter { get; set; }
 
     [Argument('C', "commentRule", "Comment rule")]
-    private static string CommentRuleText { get; set; }
+    private static string? CommentRuleText { get; set; }
 
     [Argument('K', "duplicateKeyRule", "Duplicate key rule")]
-    private static string DuplicateKeyRuleText { get; set; }
+    private static string? DuplicateKeyRuleText { get; set; }
 
     [Argument('T', "duplicateSectionRule", "Duplicate section rule")]
-    private static string DuplicateSectionRuleText { get; set; }
+    private static string? DuplicateSectionRuleText { get; set; }
 
     [Argument('E', "escapeSequenceRule", "Escape Sequence rule")]
-    private static string EscapeSequenceRuleText { get; set; }
+    private static string? EscapeSequenceRuleText { get; set; }
 
     [Argument('G', "globalKeysRule", "Global keys rule")]
-    private static string GlobalKeysRuleText { get; set; }
+    private static string? GlobalKeysRuleText { get; set; }
 
     [Argument('D', "nameValueDelimiterRule", "Name value delimiter rule")]
-    private static string NameValueDelimiterRuleText { get; set; }
+    private static string? NameValueDelimiterRuleText { get; set; }
 
     [Argument('P', "nameValueDelimiterPreferenceRule", "Name value delimiter preference rule")]
-    private static string NameValueDelimiterPreferenceRuleText { get; set; }
+    private static string? NameValueDelimiterPreferenceRuleText { get; set; }
 
     [Argument('S', "nameValueDelimiterSpacingRule", "Name value delimiter spacing rule")]
-    private static string NameValueDelimiterSpacingRuleText { get; set; }
+    private static string? NameValueDelimiterSpacingRuleText { get; set; }
 
     [Argument('N', "newlineRule", "Newline rule")]
-    private static string NewlineRuleText { get; set; }
+    private static string? NewlineRuleText { get; set; }
 
     [Argument('Q', "quotationRule", "Quotation rule")]
-    private static string QuotationRuleText { get; set; }
+    private static string? QuotationRuleText { get; set; }
 
     [Operands]
-    private static List<string> Operands { get; set; }
+    private static List<string>? Operands { get; set; }
 
-    private static string InputFile => Operands?.Count < 2 ? null : Operands[1];
+    private static string? InputFile => Operands?.Count < 2 ? null : Operands?[1];
 
     private static string? SectionName => Operands?.Count < 3 ? null : Operands?[2];
 
@@ -447,7 +447,6 @@ internal class Program
         foreach (var item in helpAttributes)
         {
             var switches = $"-{item.ShortName}, --{item.LongName}";
-            var options = SwitchToRuleOptions.ContainsKey(item.ShortName) ? SwitchToRuleOptions[item.ShortName] : new List<string>();
             var result = $"{switches,-35}\t{item.HelpText}";
             Console.WriteLine(result);
         }
@@ -492,9 +491,9 @@ internal class Program
             PrintOptions('N');
         }
         else if (QuotationRuleText == string.Empty)
-            {
+        {
             PrintOptions('Q');
-            }
+        }
         else
         {
             return false;
