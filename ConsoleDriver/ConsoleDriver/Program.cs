@@ -15,15 +15,6 @@ internal class Program
     [Argument('o', "out", "The output file path")]
     private static string OutPath { get; set; }
 
-    [Argument('s', "section", "The section to read or write")]
-    private static string SectionName { get; set; }
-
-    [Argument('k', "key", "The key to read or write")]
-    private static string KeyName { get; set; }
-
-    [Argument('v', "value", "The value to write")]
-    private static string Value { get; set; }
-
     [Argument('n', "newline", "Print newline after value")]
     private static bool ShowNewline { get; set; }
 
@@ -71,22 +62,25 @@ internal class Program
 
     private static string InputFile => Operands?.Count < 2 ? null : Operands[1];
 
+    private static string? SectionName => Operands?.Count < 3 ? null : Operands?[2];
+
+    private static string? KeyName => Operands?.Count < 4 ? null : Operands?[3];
+
+    private static string? Value => Operands?.Count < 5 ? null : Operands?[4];
+
     private static Dictionary<string, string> SwitchToOptionDescription = new()
     {
-        ["-o"] = "output path",
-        ["-s"] = "section name",
-        ["-k"] = "key name",
-        ["-v"] = "set value",
-        ["-C"] = "comment rule",
-        ["-K"] = "duplicate key rule",
-        ["-T"] = "duplicate section rule",
-        ["-E"] = "escape sequence rule",
-        ["-G"] = "global keys rule",
-        ["-D"] = "name-value delimiter rule",
-        ["-P"] = "name-value delimiter preference rule",
-        ["-S"] = "name-value delimiter spacing rule",
-        ["-N"] = "newline rule",
-        ["-Q"] = "quotation rule"
+        ["o"] = "output path",
+        ["C"] = "comment rule",
+        ["K"] = "duplicate key rule",
+        ["T"] = "duplicate section rule",
+        ["E"] = "escape sequence rule",
+        ["G"] = "global keys rule",
+        ["D"] = "name-value delimiter rule",
+        ["P"] = "name-value delimiter preference rule",
+        ["S"] = "name-value delimiter spacing rule",
+        ["N"] = "newline rule",
+        ["Q"] = "quotation rule"
     };
 
     private static Dictionary<char, List<string>> SwitchToRuleOptions = new()
