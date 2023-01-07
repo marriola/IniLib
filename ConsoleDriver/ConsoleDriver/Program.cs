@@ -33,6 +33,9 @@ internal class Program
     [Argument('y', "yes", "Do not prompt confirmation to delete")]
     private static bool Yes { get; set; }
 
+    [Argument('O', "outputDelimiter", "The output delimiter for multivalue keys (default newline)")]
+    private static string? OutputDelimiter { get; set; }
+
     [Argument('C', "commentRule", "Comment rule")]
     private static string CommentRuleText { get; set; }
 
@@ -400,7 +403,7 @@ internal class Program
         var result = config.TryGetSectionNode(sectionName);
         if (result?.Item1?.TryGetValues(KeyName, out var values) == true)
         {
-            Console.Write(string.Join(Environment.NewLine, values));
+            Console.Write(string.Join(OutputDelimiter ?? Environment.NewLine, values));
 
             if (ShowNewline)
             {
