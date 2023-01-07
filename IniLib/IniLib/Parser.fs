@@ -207,7 +207,7 @@ let parse (options: Options) tokens =
             /// Consume a text token and continue if there is more input on the line, or produce a KeyValueNode
             let inline matchValueText (text: string) quote textToken rest =
                 let inline terminate() =
-                    let keyValue = if options.quotationRule >= UseQuotation then text else text.Trim()
+                    let keyValue = if quote = None then text.Trim() else text
                     let keyValueNode = KeyValueNode (keyValue, List.rev (TokenNode textToken :: consumedTokens))
                     keyValue, keyValueNode, rest
 

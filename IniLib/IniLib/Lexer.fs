@@ -78,25 +78,22 @@ let lex options text =
             let rest, nextLine, nextColumn, commentToken = readLine line column rest
             lex' (commentToken :: hashToken :: output) nextLine nextColumn rest
 
-        | _, '"'::rest when options.quotationRule >= UseQuotation ->
+        | _, '"'::rest when options.quotationRule <> IgnoreQuotation ->
             let quoteToken = Quote (line, column)
             lex' (quoteToken :: output) nextLine nextColumn rest
 
-        | _, '\\'::'\n'::rest when options.escapeSequenceRule = UseEscapeSequencesAndLineContinuation ->
+        | _, '\\'::'\n'::rest
+        | _, '\\'::'\r'::'\n'::rest when options.escapeSequenceRule = UseEscapeSequencesAndLineContinuation ->
             let lineContinuationToken = LineContinuation (line, column)
             lex' (lineContinuationToken :: output) nextLine nextColumn rest
 
-        | _, '\\'::'\r'::'\n'::rest when options.escapeSequenceRule = UseEscapeSequencesAndLineContinuation ->
-            let lineContinuationToken = LineContinuation (line, column)
-            lex' (lineContinuationToken :: output) (nextLine + 1) 1 rest
-
-        | _, '\\'::'x'::rest when options.escapeSequenceRule > IgnoreEscapeSequences ->
+        | _, '\\'::'x'::rest when options.escapeSequenceRule <> IgnoreEscapeSequences ->
             let number, nextLine, nextColumn, rest = readNumbers line column rest
             let escapeToken = EscapedUnicodeChar (Int32.Parse(number, System.Globalization.NumberStyles.HexNumber), line, column)
             let nextLine, nextColumn = Token.endPosition escapeToken
             lex' (escapeToken :: output) nextLine nextColumn rest
 
-        | _, '\\'::c::rest when options.escapeSequenceRule > IgnoreEscapeSequences ->
+        | _, '\\'::c::rest when options.escapeSequenceRule <> IgnoreEscapeSequences ->
             let escapeToken = EscapedChar (c, line, column)
             lex' (escapeToken :: output) nextLine nextColumn rest
 

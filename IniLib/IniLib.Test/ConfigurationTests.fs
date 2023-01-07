@@ -297,3 +297,14 @@ y=   2
 """
         let actual = Configuration.toText options config
         Assert.Equal(expected, actual)
+
+    [<Fact>]
+    let ``Whitespace not included in key value`` () =
+        let options = Options.defaultOptions.WithGlobalKeysRule(AllowGlobalKeys).WithNameValueDelimiterRule(ColonDelimiter).WithQuotationRule(UseQuotation)
+        let text = "foo: bar\n\
+                    prince vegeta: \"nine thousand\"\n\
+                    \n"
+        let config = Configuration.fromText options text
+        let actual = Configuration.get "<global>" "foo" config
+        let expected = "bar"
+        Assert.Equal(expected, actual)
