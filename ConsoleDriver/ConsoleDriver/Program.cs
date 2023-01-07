@@ -24,6 +24,9 @@ internal class Program
     [Argument('y', "yes", "Do not prompt confirmation to delete")]
     private static bool Yes { get; set; }
 
+    [Argument('v', "verbose", "Set verbose")]
+    private static bool Verbose { get; set; }
+
     [Argument('O', "outputDelimiter", "The output delimiter for multivalue keys (default newline)")]
     private static string? OutputDelimiter { get; set; }
 
@@ -241,6 +244,12 @@ internal class Program
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
+
+            if (Verbose)
+            {
+                Console.WriteLine(ex.StackTrace);
+            }
+
             return;
         }
 
