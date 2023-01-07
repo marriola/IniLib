@@ -228,11 +228,21 @@ internal class Program
             return;
         }
 
-        var config = InputFile switch
+        ConfigurationWrapper config;
+
+        try
         {
+            config = InputFile switch
+            {
             "-" => FromConsole(),
             string path => ConfigurationWrapper.FromFile(path, Options)
         };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return;
+        }
 
         if (!string.IsNullOrWhiteSpace(Value))
         {
