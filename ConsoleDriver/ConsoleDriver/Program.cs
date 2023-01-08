@@ -279,11 +279,11 @@ internal class Program
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            Console.Error.WriteLine(ex.Message);
 
             if (Verbose)
             {
-                Console.WriteLine(ex.StackTrace);
+                Console.Error.WriteLine(ex.StackTrace);
             }
 
             return;
