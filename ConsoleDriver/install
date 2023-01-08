@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+function install_local() {
+    grep "Set up iniq" ~/.bashrc > /dev/null
+
+    if [[ "$?" == "0" ]]; then
+	echo already installed
+	exit
+    fi
+
+    mkdir -p ~/.local/bin
+    cp iniq ~/.local/bin
+
+    mkdir -p ~/.local/share/iniq
+    cp iniq-completion.sh ~/.local/share/iniq
+
+    cat >> ~/.bashrc << EOF
+
+# Set up iniq
+[[ "\$PATH" != *"$HOME/.local/bin"* ]] && export PATH="\$PATH:$HOME/.local/bin"
+source $HOME/.local/share/iniq/iniq-completion.sh iniq
+EOF
+
+    . ./iniq-completion.sh
+}
+
+function install_global() {
+    sudo cp iniq-completion.sh /etc/bash_completion.d
+    sudo cp iniq /usr/bin
+
+    . ./iniq-completion.sh
+}
+
+case $1 in
+    "--local") install_local;;
+    "--global") install_global;;
+    *)
+	echo "usage: ./install (--local | --global)"
+esac
