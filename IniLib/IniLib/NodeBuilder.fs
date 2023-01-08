@@ -6,6 +6,10 @@ open IniLib.Utilities
 let private RE_WHITESPACE = new Regex("\\s");
 let private RE_ESCAPE_CHARACTERS = new Regex("[\a\b\f\n\r\t\v\"\'\\#: ]")
 
+let inline newlineTrivia options = TriviaNode (Whitespace (options.newlineRule.toText(), 0, 0))
+let inline whitespaceTrivia space = TriviaNode (Whitespace (space, 0, 0))
+let inline replaceableText text = ReplaceableTokenNode (Text (text, 0, 0))
+
 let private escapes =
     Parser.escapeCodeToCharacter
     |> List.ofSeq
@@ -20,7 +24,7 @@ let private escapeNode constructor node text children =
     if RE_ESCAPE_CHARACTERS.IsMatch(text) then
         let prologue = children |> List.takeWhile Node.isNotReplaceable
         let epilogue = children |> List.rev |> List.takeWhile Node.isNotReplaceable |> List.rev
-        let nameText = [ ReplaceableTokenNode (Text (escape text, 0, 0)) ]
+        let nameText = [ replaceableText (escape text) ]
         constructor (text, prologue @ nameText @ epilogue)
     else
         node
@@ -67,23 +71,21 @@ let sanitize options node =
 let keyName options name =
     let whitespace =
         match options.nameValueDelimiterSpacingRule with
-        | LeftOnly
-        | BothSides -> [ TriviaNode (Whitespace (" ", 0, 0)) ]
+        | LeftOnly | BothSides -> [ whitespaceTrivia " " ]
         | _ -> []
 
-    KeyNameNode (name, [ ReplaceableTokenNode (Text (name, 0, 0)) ] @ whitespace)
+    KeyNameNode (name, replaceableText name :: whitespace)
     |> sanitize options
 
 let keyValue options value =
     let whitespace =
         match options.nameValueDelimiterSpacingRule with
-        | RightOnly
-        | BothSides -> [TriviaNode (Whitespace (" ", 0, 0))]
+        | RightOnly | BothSides -> [ whitespaceTrivia " "]
         | _ -> []
     let children = [
         whitespace
-        [ ReplaceableTokenNode (Text (value, 0, 0)) ]
-        [ TriviaNode (Text (options.newlineRule.toText(), 0, 0)) ]
+        [ replaceableText value ]
+        [ newlineTrivia options ]
     ]
 
     KeyValueNode (value, List.collect id children)
@@ -102,3 +104,24 @@ let key options name value =
         @ [ keyValue options value ]
 
     KeyNode (name, value, children)
+
+let keys options keys =
+    keys
+    |> List.map (fun (name, value) -> key options name value)
+
+let section options name children =
+    let sectionHeading, trailingNewline =
+        if options.globalKeysRule = AllowGlobalKeys && name = "<global>" then
+            [], []
+        else
+            let sectionHeadingNode =
+                [ SectionHeadingNode (name, [
+                    TokenNode (LeftBracket (0, 0))
+                    replaceableText name
+                    TokenNode (RightBracket (0, 0))
+                    newlineTrivia options
+                ]) ]
+            let newline = [ newlineTrivia options ]
+            sectionHeadingNode, newline
+
+    SectionNode (name, sectionHeading @ children @ trailingNewline)

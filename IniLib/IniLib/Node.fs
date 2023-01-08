@@ -47,7 +47,7 @@ module Node =
                 visit value tree [] |> ignore
         walk' initialValue tree
 
-    let inline private nodeCata fChildren fToken defaultValue = function
+    let inline nodeCata fChildren fToken defaultValue = function
         | RootNode children
         | SectionHeadingNode (_, children)
         | SectionNode (_, children)
@@ -64,6 +64,24 @@ module Node =
 
         | _ ->
             defaultValue
+
+    let inline fold fChildren fToken value = function
+        | RootNode children
+        | SectionHeadingNode (_, children)
+        | SectionNode (_, children)
+        | KeyNode (_, _, children)
+        | KeyNameNode (_, children)
+        | KeyValueNode (_, children)
+        | CommentNode (_, children) when List.length children > 0 ->
+            fChildren value children
+
+        | TokenNode token
+        | ReplaceableTokenNode token
+        | TriviaNode token ->
+            fToken token
+
+        | _ ->
+            value
 
     let rec toText options node = nodeCata (List.map (toText options) >> String.concat "") (Token.toText options) "" node
 
@@ -84,19 +102,16 @@ module Node =
         | CommentNode (text, children) -> CommentNode (text, children @ [child])
         | _ -> node
 
-    let internal insertNewlinesIfNeeded options nodes =
-        let newlineText = options.newlineRule.toText()
-
-        let rec insertNewlinesIfNeeded' output nodes =
-            match nodes with
-            | [] -> List.rev output
-            | n::rest when not (n |> toText options |> String.endsWith "\n") ->
-                let newline = TriviaNode (Whitespace (newlineText, 0, 0))
-                insertNewlinesIfNeeded' (newline :: n :: output) rest
-            | n::rest ->
-                insertNewlinesIfNeeded' (n :: output) rest
-        
-        insertNewlinesIfNeeded' [] nodes
+    let addChildToBeginning child node =
+        match node with
+        | RootNode children -> RootNode ([child] @ children)
+        | SectionHeadingNode (name, children) -> SectionHeadingNode (name, [child] @ children)
+        | SectionNode (name, children) -> SectionNode (name, [child] @ children)
+        | KeyNode (name, value, children) -> KeyNode (name, value, [child] @ children)
+        | KeyNameNode (name, children) -> KeyNameNode (name, [child] @ children)
+        | KeyValueNode (value, children) -> KeyValueNode (value, [child] @ children)
+        | CommentNode (text, children) -> CommentNode (text, [child] @ children)
+        | _ -> node
 
     let inline internal isWhitespace node = match node with TriviaNode (Whitespace _) -> true | _ -> false
     let inline internal isReplaceable node = match node with ReplaceableTokenNode _ -> true | _ -> false

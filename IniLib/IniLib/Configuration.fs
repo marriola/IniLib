@@ -89,7 +89,7 @@ module Configuration =
 
             getKeys' Set.empty [] nodes
 
-        let rec getSections' out nodes =
+        let rec getSections out nodes =
             match nodes with
             | [] ->
                 out
@@ -112,12 +112,12 @@ module Configuration =
                     else
                         // Create map for this section
                         (name, (getKeys children, [ sectionNode ])) :: out
-                getSections' nextOut rest
+                getSections nextOut rest
 
             | _::rest ->
-                getSections' out rest
+                getSections out rest
 
-        getSections' [] children
+        getSections [] children
 
     /// The section keys of the configuration.
     let sections config =
@@ -256,7 +256,6 @@ module Configuration =
     /// Returns a new configuration with the key added.
     let add options sectionName keyName value config =
         let (Configuration (tree, dic)) = config
-        let newlineText = options.newlineRule.toText()
 
         let getKeyNodeChildren = function
             | KeyNode (_, _, KeyNameNode _ :: TokenNode (Assignment _) :: KeyValueNode (_, children) :: _)
@@ -286,7 +285,8 @@ module Configuration =
                     List.tryFindIndexBack
                         (function KeyNode (kn, _, _) when keyName = kn -> true | _ -> false)
                         children
-                | _ -> None
+                | _ ->
+                    None
 
             let lastKeyIndex =
                 lastMatchingKeyIndex
@@ -296,19 +296,15 @@ module Configuration =
             let lastKeyText = if lastKeyIndex = -1 then "" else Node.toText options children.[lastKeyIndex]
 
             // Insert a newline if the last key didn't end in a newline
-            let newline =
-                if lastKeyText.EndsWith("\n") then
-                    []
-                else
-                    [ TriviaNode (Whitespace (newlineText, 0, 0)) ]
+            let newline = if lastKeyText.EndsWith("\n") then [] else [ NodeBuilder.newlineTrivia options ]
 
             // Copy leading whitespace from last key
             let keyNode =
                 let regexMatch = RE_LEADING_WHITESPACE.Match(lastKeyText)
                 if regexMatch.Success then
-                    let (KeyNode (name, value, KeyNameNode (_, newKeyNameNodes)::rest)) = keyNode
-                    let whitespaceNode = TriviaNode (Whitespace (regexMatch.Groups[0].Value, 0, 0))
-                    let keyNameNode = KeyNameNode (name, [whitespaceNode] @ newKeyNameNodes)
+                    let whitespaceNode = NodeBuilder.whitespaceTrivia regexMatch.Groups[0].Value
+                    let (KeyNode (name, value, (KeyNameNode _ as keyNameNode)::rest)) = keyNode
+                    let keyNameNode = Node.addChildToBeginning whitespaceNode keyNameNode
                     KeyNode (name, value, [keyNameNode] @ rest)
                 else
                     keyNode
@@ -328,46 +324,27 @@ module Configuration =
 
         let addSectionWithKey sectionName keyNode =
             let (RootNode children) = tree
-            let lastChildText =
-                children
-                |> List.tryLast
-                |> Option.map (Node.toText options)
-                |> Option.defaultValue "\n"
-            let newline =
-                if lastChildText.EndsWith("\n")
-                    then []
-                    else [ TriviaNode (Whitespace (newlineText, 0, 0)) ]
-            let sectionHeadingNode =
-                if sectionName = "<global>" && options.globalKeysRule = AllowGlobalKeys then
-                    []
-                else
-                    [ SectionHeadingNode (sectionName, [
-                          TokenNode (LeftBracket (0, 0))
-                          ReplaceableTokenNode (Text (sectionName, 0, 0))
-                          TokenNode (RightBracket (0, 0))
-                          TokenNode (Whitespace (newlineText, 0, 0))
-                      ]) ]
-            let nodesOut = [
-                SectionNode (sectionName, sectionHeadingNode @ [ keyNode ])
-                TriviaNode (Whitespace (newlineText, 0, 0))
-            ]
-
+            let nodesOut = NodeBuilder.section options sectionName [ keyNode ]
             let newChildren =
                 if sectionName = "<global>" && options.globalKeysRule = AllowGlobalKeys then
+                    // Insert global section after initial comments, before all other sections
                     let comments = List.takeWhile (function TriviaNode _ | CommentNode _ -> true | _ -> false) children
-                    comments @ nodesOut @ newline @ children[comments.Length..]
+                    comments @ [ nodesOut ] @ [ NodeBuilder.newlineTrivia options ] @ children[comments.Length..]
                 else
-                    children @ newline @ nodesOut
+                    // Insert a newline if the last node doesn't end with a newline, and add the section at the end
+                    let lastChildText =
+                        children
+                        |> List.tryLast
+                        |> Option.map (Node.toText options)
+                        |> Option.defaultValue "\n"
+                    let newline = if lastChildText.EndsWith("\n") then [] else [ NodeBuilder.newlineTrivia options ]
+                    children @ newline @ [ nodesOut ]
 
             let newTree = RootNode newChildren
             let newDic = toMap options newTree
-
             Configuration (newTree, newDic)
 
-        let section =
-            dic
-            |> SectionMap.unwrap
-            |> Map.tryFind sectionName
+        let section = Map.tryFind sectionName (SectionMap.unwrap dic)
         let key = Option.bind (fst >> KeyMap.unwrap >> Map.tryFind keyName) section
 
         match key with
@@ -423,7 +400,7 @@ module Configuration =
                 let (SectionNode (_, sectionChildren)) = sectionNode
 
                 // Replace section heading name and rebuild configuration
-                let newText = [ReplaceableTokenNode (Text (newName, 0, 0))]
+                let newText = [ NodeBuilder.replaceableText newName ]
                 let newSection = SectionNode (newName, sectionChildren)
                 let newSection = Node.replace Node.isReplaceable options sectionHeadingText newText newSection
                 Node.replace ((=) sectionNode) options [sectionNode] [newSection] tree)
@@ -443,7 +420,7 @@ module Configuration =
             (tree, sectionNodes)
             ||> List.fold (fun tree sectionNode ->
                 let children = Node.getChildren sectionNode
-                let newText = [ReplaceableTokenNode (Text (newKeyName, 0, 0))]
+                let newText = [ NodeBuilder.replaceableText newKeyName ]
 
                 // Replace name in matching keys
                 (tree, children)
@@ -503,32 +480,31 @@ module Configuration =
                     || options.nameValueDelimiterRule = EqualsOrColonDelimiter && maybeAssignmentChar <> None then
                     keyNode
                 else
-                    let leftWhitespace =
-                        match options.nameValueDelimiterSpacingRule with
-                        | BothSides
-                        | LeftOnly -> [ TriviaNode (Whitespace (" ", 0, 0)) ]
-                        | _ -> []
-                    let rightWhitespace =
-                        match options.nameValueDelimiterSpacingRule with
-                        | BothSides
-                        | RightOnly -> [ TriviaNode (Whitespace (" ", 0, 0)) ]
-                        | _ -> []
-                    let keyNameNodeStripped =
-                        keyNameChildren
-                        |> List.rev
-                        |> List.skipWhile Node.isWhitespace
-                        |> List.rev
                     let keyNameNode =
+                        let leftWhitespace =
+                            match options.nameValueDelimiterSpacingRule with
+                            | BothSides | LeftOnly -> [ NodeBuilder.whitespaceTrivia " " ]
+                            | _ -> []
+                        let keyNameNodeStripped =
+                            keyNameChildren
+                            |> List.rev
+                            |> List.skipWhile Node.isWhitespace
+                            |> List.rev
                         let node = KeyNameNode (name, keyNameNodeStripped @ leftWhitespace)
                         if options.nameValueDelimiterRule = NoDelimiter then NodeBuilder.sanitize options node else node
                     let assignmentNode =
                         match preferredAssignmentChar with
                         | Some c -> [ TokenNode (Assignment (c, 0, 0)) ]
                         | None -> []
-                    let keyValueNodeStripped =
-                        keyValueChildren
-                        |> List.skipWhile Node.isWhitespace
-                    let keyValueNode = KeyValueNode (value, rightWhitespace @ keyValueNodeStripped)
+                    let keyValueNode =
+                        let rightWhitespace =
+                            match options.nameValueDelimiterSpacingRule with
+                            | BothSides | RightOnly -> [ NodeBuilder.whitespaceTrivia " " ]
+                            | _ -> []
+                        let keyValueNodeStripped =
+                            keyValueChildren
+                            |> List.skipWhile Node.isWhitespace
+                        KeyValueNode (value, rightWhitespace @ keyValueNodeStripped)
                     KeyNode (name, value, [ keyNameNode ] @ assignmentNode @ [ keyValueNode ] @ rest)
                 
             let newSectionChildren =
