@@ -2,7 +2,7 @@
 
 iniq is a simple console driver for IniLib.
 
-![autocomplete][https://github.com/marriola/IniLib/raw/master/ConsoleDriver/autocomplete.gif]
+![autocomplete](https://github.com/marriola/IniLib/raw/master/ConsoleDriver/autocomplete.gif)
 
 ## Installation
 
