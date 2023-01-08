@@ -1,4 +1,4 @@
-﻿module IniLib.Utilities.List
+﻿module internal IniLib.Utilities.List
 
 let inline deleteAt i (xs: 'a list) = xs[..i-1] @ xs[i+1..]
 

@@ -1,4 +1,4 @@
-﻿module IniLib.Utilities.String
+﻿module internal IniLib.Utilities.String
 
 open System
 

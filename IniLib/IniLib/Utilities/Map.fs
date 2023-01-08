@@ -1,4 +1,4 @@
-﻿module IniLib.Utilities.Map
+﻿module internal IniLib.Utilities.Map
 
 let inline union map1 map2 =
     let map1Keys = Map.toSeq map1
