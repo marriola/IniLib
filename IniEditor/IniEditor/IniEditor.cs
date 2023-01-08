@@ -554,7 +554,7 @@ namespace IniEditor
 
         private void SelectDefaultPreferenceRule(NameValueDelimiterRule delimiterRule)
         {
-            var defaultPreferenceOption = NameValueDelimiterPreferenceRule.DefaultPreferenceRule.Invoke(delimiterRule);
+            var defaultPreferenceOption = NameValueDelimiterPreferenceRule.DefaultFor.Invoke(delimiterRule);
             var preferenceIndex = _optionToValues[Strings.NameValueDelimiterPreferenceRule].IndexOf(_delimiterPreferenceRuleToText[defaultPreferenceOption]);
             _optionToComboBox[Strings.NameValueDelimiterPreferenceRule].SelectedIndex = preferenceIndex;
             _optionToComboBox[Strings.NameValueDelimiterPreferenceRule].Enabled = delimiterRule == NameValueDelimiterRule.EqualsOrColonDelimiter;
@@ -562,7 +562,7 @@ namespace IniEditor
 
         private void SelectDefaultSpacingRule(NameValueDelimiterRule delimiterRule)
         {
-            var defaultSpacingOption = NameValueDelimiterSpacingRule.DefaultSpacingRule.Invoke(delimiterRule);
+            var defaultSpacingOption = NameValueDelimiterSpacingRule.DefaultFor.Invoke(delimiterRule);
             var spacingIndex = _optionToValues[Strings.NameValueDelimiterSpacingRule].IndexOf(_delimiterSpacingRuleToText[defaultSpacingOption]);
             _optionToComboBox[Strings.NameValueDelimiterSpacingRule].SelectedIndex = spacingIndex;
             _optionToComboBox[Strings.NameValueDelimiterSpacingRule].Enabled = delimiterRule != NameValueDelimiterRule.NoDelimiter;
