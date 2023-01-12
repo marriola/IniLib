@@ -350,8 +350,8 @@ namespace IniEditor
         {
             var text = tbContent.Text;
             var node = e.Node.Tag as Node;
-            var (startLine, startColumn) = NodeModule.position(node);
-            var (endLine, endColumn) = NodeModule.endPosition(node);
+            var (startLine, startColumn) = Node.position(node);
+            var (endLine, endColumn) = Node.endPosition(node);
             var startOffset = CountOffset(text, startLine, startColumn);
             var endOffset = CountOffset(text, endLine, endColumn);
             tbContent.Select(startOffset, endOffset - startOffset);
@@ -757,8 +757,8 @@ namespace IniEditor
                 return;
             }
 
-            var (line, column) = NodeModule.position(textNodes.First());
-            var (lastLine, lastColumn) = NodeModule.endPosition(textNodes.Last());
+            var (line, column) = Node.position(textNodes.First());
+            var (lastLine, lastColumn) = Node.endPosition(textNodes.Last());
             var startOffset = CountOffset(tbContent.Text, line, column);
             var endOffset = CountOffset(tbContent.Text, lastLine, lastColumn);
 
