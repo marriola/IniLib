@@ -87,7 +87,7 @@ module QuotationRuleTests =
             |> Options.withEscapeSequenceRule UseEscapeSequences
         for (escapeCode, character) in EscapeSequenceRuleTests.validEscapeCharacters do 
             let text = $"[Section 1]\n\
-                         test = \\\"a\\{escapeCode}b\\\""
+                         test = \"a\\{escapeCode}b\""
             let expectedValue = $"a{character}b"
             let config = Configuration.fromText options text
             let actualValue = Configuration.get "Section 1" "test" config

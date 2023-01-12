@@ -21,6 +21,14 @@ let internal escapeCodeToCharacter = dict [
     'v', char 11
 ]
 
+type private ParseKeyPartState =
+    { input: Token list
+      text: string option
+      quote: Token option
+      consumedTokens: Node list }
+with
+    static member defaultFor input = { input = input; text = None; quote = None; consumedTokens = [] }
+
 let parse (options: Options) tokens =
     /// Marks text and whitespace tokens in the interior of a KeyNameNode, KeyValueNode or SectionHeadingNode as replaceable,
     /// excluding any whitespace or non-text tokens at the beginning or end of the list.
@@ -80,8 +88,8 @@ let parse (options: Options) tokens =
         | _ ->
             failwithf "Expected KeyNameNode, KeyValueNode or SectionHeadingNode, got %A" node
 
-    let parseComment tokens =
-        let rec parseComment' text consumedTokens tokens =
+    let tryParseComment tokens =
+        let rec tryParseComment' text consumedTokens tokens =
             match tokens with
             | (Whitespace (t, _, _) as token)::rest
             | (Comment (t, _, _) as token)::rest ->
@@ -91,16 +99,17 @@ let parse (options: Options) tokens =
                     let nextNode = CommentNode (nextText.Trim(), List.rev (TokenNode token :: consumedTokens))
                     Some nextNode, rest
                 else
-                    parseComment' nextText (TokenNode token :: consumedTokens) rest
+                    tryParseComment' nextText (TokenNode token :: consumedTokens) rest
 
             | _ ->
                 let nextNode = CommentNode (text.Trim(), List.rev consumedTokens)
                 Some nextNode, tokens
 
+        // Check the rest of the line to see if it has a comment
         let rec parseEpilogue consumedTokens tokens =
             match tokens with
             | (Whitespace (text, _, _) as ws)::rest when not (text.EndsWith("\n")) ->
-                parseEpilogue (TokenNode ws :: consumedTokens) rest
+                parseEpilogue (TriviaNode ws :: consumedTokens) rest
             | (CommentIndicator _ as t)::rest ->
                 true, (TokenNode t :: consumedTokens), rest
             | _ ->
@@ -109,13 +118,13 @@ let parse (options: Options) tokens =
         let hasComment, consumedTokens, rest = parseEpilogue [] tokens
 
         if hasComment then
-            parseComment' "" consumedTokens rest
+            tryParseComment' "" consumedTokens rest
         else
-            let consumedTokens = List.map (function TokenNode token -> token) consumedTokens
+            let consumedTokens = List.map (function TriviaNode token -> token) consumedTokens
             None, consumedTokens @ rest
 
     let parseKey leadingWhitespace tokens =
-        let expected () =
+        let expectedAfterName =
             match options.nameValueDelimiterRule with
             | EqualsDelimiter -> "'='"
             | ColonDelimiter -> "':'"
@@ -124,13 +133,16 @@ let parse (options: Options) tokens =
 
         let (|EscapedText|_|) token =
             match token with
-            | EscapedChar (c, line, column) -> Some (string escapeCodeToCharacter[c], line, column)
-            | EscapedUnicodeChar (codepoint, line, column) -> Some (codepoint |> char |> string, line, column)
-            | LineContinuation (line, column) -> Some (options.newlineRule.toText(), line, column)
+            | EscapedChar (c, line, column) ->
+                Some (string escapeCodeToCharacter[c], line, column)
+            | EscapedUnicodeChar (codepoint, line, column) ->
+                Some (codepoint |> char |> string, line, column)
+            | LineContinuation (line, column) ->
+                Some (options.newlineRule.toText(), line, column)
             | _ -> None
 
-        let rec parseKeyName name quote consumedTokens tokens =
-            match name, tokens with
+        let rec parseKeyName state =
+            match state.text, state.input with
             // Premature newline
             | _, (Whitespace (text, _, _) as textToken)::_
             | _, (Text (text, _, _) as textToken)::_ when text.EndsWith("\n") ->
@@ -138,39 +150,43 @@ let parse (options: Options) tokens =
 
             // No name yet - consume whitespace
             | None, (Whitespace _ as whitespaceToken)::rest ->
-                parseKeyName None quote (TokenNode whitespaceToken :: consumedTokens) rest
+                parseKeyName { state with
+                                    input = rest
+                                    consumedTokens = TriviaNode whitespaceToken :: state.consumedTokens }
 
             // No name yet - got quote
             | None, (Quote _ as quoteToken)::rest ->
-                parseKeyName (Some "") (Some quoteToken) (TokenNode quoteToken :: consumedTokens) rest
+                parseKeyName { state with
+                                    input = rest
+                                    text = Some ""
+                                    quote = Some quoteToken
+                                    consumedTokens = TokenNode quoteToken :: state.consumedTokens }
 
             // Set the name
-            | None, (Text (t, _, _) as textToken)::rest ->
-                parseKeyName (Some t) quote (TokenNode textToken :: consumedTokens) rest
-
-            // Set the name with escaped text
-            | None, (EscapedText (text, _, _) as token::rest) ->
-                parseKeyName (Some text) quote (TokenNode token :: consumedTokens) rest
+            | None, (Text (text, _, _) as textToken)::rest
+            | None, (EscapedText (text, _, _) as textToken::rest) ->
+                parseKeyName { state with
+                                    input = rest
+                                    text = Some text
+                                    consumedTokens = TokenNode textToken :: state.consumedTokens }
 
             // When no delimiter: whitespace terminates key name
-            | (Some name), (Whitespace _)::_ when quote = None && options.nameValueDelimiterRule = NameValueDelimiterRule.NoDelimiter ->
+            | (Some name), (Whitespace _)::_ when state.quote = None && options.nameValueDelimiterRule = NameValueDelimiterRule.NoDelimiter ->
                 let name = name.Trim()
-                let keyNameNode = KeyNameNode (name, List.rev consumedTokens)
-                name, keyNameNode, tokens
+                let keyNameNode = KeyNameNode (name, List.rev state.consumedTokens)
+                name, keyNameNode, state.input
 
             // Append whitespace and text to the already read name
             | (Some name1), (Text (name2, _, _) as textToken)::rest
-            | (Some name1), (Whitespace (name2, _, _) as textToken)::rest ->
-                let value = name1 + name2
-                parseKeyName (Some value) quote (TokenNode textToken :: consumedTokens) rest
-
-            // Append escaped text to already read name
-            | (Some name), (EscapedText (text, _, _) as token::rest) ->
-                let value = name + text
-                parseKeyName (Some value) quote (TokenNode token :: consumedTokens) rest
+            | (Some name1), (Whitespace (name2, _, _) as textToken)::rest
+            | (Some name1), (EscapedText (name2, _, _) as textToken)::rest ->
+                parseKeyName { state with
+                                    input = rest
+                                    text = Some (name1 + name2)
+                                    consumedTokens = TokenNode textToken :: state.consumedTokens }
 
             // Closing quote
-            | (Some name), (Quote _ as quoteToken)::rest when quote <> None ->
+            | (Some name), (Quote _ as quoteToken)::rest when state.quote <> None ->
                 // Consume rest of whitespace
                 let whitespace =
                     rest
@@ -178,113 +194,118 @@ let parse (options: Options) tokens =
                     |> List.map TriviaNode
                 let rest = rest[whitespace.Length..]
 
-                let keyNameNode = KeyNameNode (name, whitespace @ TokenNode quoteToken :: consumedTokens |> List.rev)
+                let keyNameNode = KeyNameNode (name, whitespace @ TokenNode quoteToken :: state.consumedTokens |> List.rev)
                 name, keyNameNode, rest
 
             // Assignment token - we're done
             | (Some name), (Assignment _)::_ ->
                 let name = name.Trim()
-                let keyNameNode = KeyNameNode (name, List.rev consumedTokens)
-                name, keyNameNode, tokens
+                let keyNameNode = KeyNameNode (name, List.rev state.consumedTokens)
+                name, keyNameNode, state.input
 
             | None, token::_ ->
                 failwithf $"Expected key name, got {token} at {Token.position token}"
 
             | (Some _), token::_ ->
-                failwithf $"Expected {expected()}, got {token} at {Token.position token}"
+                failwithf $"Expected {expectedAfterName}, got {token} at {Token.position token}"
 
             | _, [] ->
-                failwith $"Ran out of input reading key name at {Node.endPosition consumedTokens[0]}"
+                failwith $"Ran out of input reading key name at {Node.endPosition state.consumedTokens[0]}"
 
         let matchAssignment tokens =
             match options.nameValueDelimiterRule, tokens with
-            | NoDelimiter, _ -> [], tokens
-            | _, (Assignment _ as assignmentToken)::rest -> [TokenNode assignmentToken], rest
-            | _, token::_ -> failwithf "Expected assignment, got %O at %O" token (Token.position token)
-            | _ -> failwithf "Expected %s, got end of input" (expected ())
-        
-        let rec parseKeyValue value quote consumedTokens keyName input =
+            | NoDelimiter, _ ->
+                [], tokens
+            | _, (Assignment _ as assignmentToken)::rest ->
+                [TokenNode assignmentToken], rest
+            | _, token::_ ->
+                failwithf "Expected assignment, got %O at %O" token (Token.position token)
+            | _ ->
+                failwithf "Expected %s, got end of input" (expectedAfterName)
+
+        let rec parseKeyValue state =
             /// Consume a text token and continue if there is more input on the line, or produce a KeyValueNode
-            let inline matchValueText (text: string) quote textToken rest =
+            let inline matchValueText (text: string) =
                 let inline terminate() =
-                    let keyValue = if quote = None then text.Trim() else text
-                    let keyValueNode = KeyValueNode (keyValue, List.rev (TokenNode textToken :: consumedTokens))
-                    keyValue, keyValueNode, rest
+                    let keyValue = if state.quote = None then text.Trim() else text
+                    let keyValueNode = KeyValueNode (keyValue, List.rev (TokenNode state.input[0] :: state.consumedTokens))
+                    keyValue, keyValueNode, List.tail state.input
 
                 // Terminate if out of input, or if value ends in unescaped newline or quote
-                match rest, textToken with
-                | [], _
-                | _, Quote _ ->
+                match state.input with
+                | _::[] ->
                     terminate()
 
-                | _, Text (text, _, _)
-                | _, Whitespace (text, _, _) when quote = None && text.EndsWith("\n") ->
+                | Quote _::_ when state.quote <> None ->
                     terminate()
 
-                | _ ->
-                    parseKeyValue (Some text) quote (TokenNode textToken :: consumedTokens) keyName rest
+                | Text (text, _, _)::_
+                | Whitespace (text, _, _)::_ when state.quote = None && text.EndsWith("\n") ->
+                    terminate()
 
-            // Consumes text from a Text or Whitespace token. Ends if the text ends in a newline, otherwise continues parsing.
-            match value, input with
+                | token::rest ->
+                    parseKeyValue { state with
+                                        input = rest
+                                        text = Some text
+                                        consumedTokens = TokenNode token :: state.consumedTokens }
+
+            match state.text, state.input with
             // Consume whitespace until value starts
-            | None, (Whitespace _ as whitespaceToken)::rest when quote = None ->
-                parseKeyValue None quote (TokenNode whitespaceToken :: consumedTokens) keyName rest
+            | None, (Whitespace _ as whitespaceToken)::rest when state.quote = None ->
+                parseKeyValue { state with
+                                    input = rest
+                                    consumedTokens = TriviaNode whitespaceToken :: state.consumedTokens }
 
             // Match initial quotation mark
-            | None, (Quote _ as quoteToken)::rest when options.quotationRule >= UseQuotation && quote = None ->
-                parseKeyValue (Some "") (Some quoteToken) (TokenNode quoteToken :: consumedTokens) keyName rest
+            | None, (Quote _ as quoteToken)::rest when options.quotationRule >= UseQuotation && state.quote = None ->
+                parseKeyValue { state with
+                                    input = rest
+                                    text = Some ""
+                                    quote = Some quoteToken
+                                    consumedTokens = TokenNode quoteToken :: state.consumedTokens }
 
             // Set value
-            | None, (Text (text, _, _) as textToken)::rest
-            | None, (EscapedText (text, _, _) as textToken)::rest ->
-                matchValueText text quote textToken rest
+            | None, Text (text, _, _)::_
+            | None, EscapedText (text, _, _)::_ ->
+                matchValueText text
 
-            // Append unescaped text to value
-            | (Some value), (Text (text, _, _) as textToken)::rest
-            | (Some value), (Whitespace (text, _, _) as textToken)::rest ->
+            // Append text to value
+            | (Some value), Text (text, _, _)::_
+            | (Some value), Whitespace (text, _, _)::_
+            | (Some value), EscapedText (text, _, _)::_ ->
                 let value = value + text
-                matchValueText value quote textToken rest
-
-            // Append escaped text to value
-            | (Some value), (EscapedText (text, _, _) as textToken)::rest ->
-                let value = value + text
-                matchValueText value quote textToken rest
+                matchValueText value
 
             // Hit a comment - we're done
             | _, (CommentIndicator _)::_ ->
-                let value = Option.defaultValue "" value
+                let value = Option.defaultValue "" state.text
                 let keyValue = value.Trim()
-                let keyValueNode = KeyValueNode (keyValue, List.rev consumedTokens)
-                keyValue, keyValueNode, input
+                let keyValueNode = KeyValueNode (keyValue, List.rev state.consumedTokens)
+                keyValue, keyValueNode, state.input
 
             // Add left bracket, right bracket, and assignment tokens verbatim
             | (Some value), (LeftBracket _ as token)::rest
             | (Some value), (RightBracket _ as token)::rest
             | (Some value), (Assignment _ as token)::rest ->
-                let text = value + Token.toText options token
-                parseKeyValue (Some text) quote (TokenNode token::consumedTokens) keyName rest
+                parseKeyValue { state with
+                                    input = rest
+                                    text = Some (value + Token.toText options token)
+                                    consumedTokens = TokenNode token :: state.consumedTokens }
 
             // Closing quote terminates the value
-            | (Some value), (Quote _ as quoteToken)::rest when options.quotationRule >= UseQuotation ->
-                matchValueText value quote quoteToken rest
+            | (Some value), (Quote _)::_ when options.quotationRule >= UseQuotation ->
+                matchValueText value
 
             | _, token::_ ->
-                failwithf $"Unexpected {token} at {Token.position token} while reading key '{keyName}'"
+                failwithf $"Unexpected {token} at {Token.position token} while reading key"
 
             | _ ->
-                let lastPosition = consumedTokens |> List.head |> Node.position
+                let lastPosition = state.consumedTokens |> List.head |> Node.position
                 failwith $"Ran out of input reading key value at {lastPosition}"
 
-        let keyName, keyNameNode, tokens = parseKeyName None None leadingWhitespace tokens
+        let keyName, keyNameNode, tokens = parseKeyName { ParseKeyPartState.defaultFor tokens with consumedTokens = leadingWhitespace }
         let assignment, tokens = matchAssignment tokens
-        let literalKeyValue, keyValueNode, tokens = parseKeyValue None None [] keyName tokens
-        let keyValue =
-            if options.quotationRule >= UseQuotation
-                && literalKeyValue.StartsWith("\"")
-                && literalKeyValue.EndsWith("\"") then
-                literalKeyValue.Substring(1, literalKeyValue.Length - 2)
-            else
-                literalKeyValue
+        let keyValue, keyValueNode, tokens = parseKeyValue (ParseKeyPartState.defaultFor tokens)
 
         let endsWithNewline =
             keyValueNode
@@ -295,7 +316,7 @@ let parse (options: Options) tokens =
 
         let comment, tokens =
             if endsWithNewline then None, tokens
-            else parseComment tokens
+            else tryParseComment tokens
 
         let keyNodeChildren =
             [ markReplaceableNodes keyNameNode ]
@@ -349,12 +370,13 @@ let parse (options: Options) tokens =
 
         // Comment
         | (CommentIndicator _)::_ ->
-            let (Some nextComment), tokens = parseComment tokens
+            let (Some nextComment), tokens = tryParseComment tokens
             parseKeys parsedKeys (nextComment :: outNodes) tokens
 
         // Parse the next key with any consumed whitespace from the last line of the output added to it
         | _ ->
             let doesNotEndWithNewline = Node.toText options >> String.contains "\n" >> not
+            // I should be able to comment these two lines out, and parseKeyName should pick up the leading whitespace, but it doesn't - why?
             let leadingWhitespace = List.ofSeq (Seq.takeWhile doesNotEndWithNewline outNodes)
             let outNodes = List.skip (List.length leadingWhitespace) outNodes
             let keyName, nextKey, tokens = parseKey leadingWhitespace tokens
@@ -418,7 +440,7 @@ let parse (options: Options) tokens =
 
         // Comment
         | (CommentIndicator _)::_ ->
-            let (Some nextNode), rest = parseComment tokens
+            let (Some nextNode), rest = tryParseComment tokens
             parse' parsedSections (nextNode :: output) rest
 
         // Section with a heading
@@ -445,8 +467,7 @@ let parse (options: Options) tokens =
             parse' (Set.add sectionName parsedSections) output tokens
 
         // Property outside section (i.e. global property)
-        | (Quote _)::_
-        | (Text _)::_ when options.globalKeysRule = AllowGlobalKeys ->
+        | (Quote _)::_ | (Text _)::_ when options.globalKeysRule = AllowGlobalKeys ->
             let keys, tokens = parseKeys Set.empty [] tokens
             let section = SectionNode ("<global>", keys)
             parse' parsedSections (section :: output) tokens
