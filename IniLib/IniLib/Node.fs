@@ -27,9 +27,7 @@ with
         | TokenNode token -> $"TokenNode %O{token}"
         | ReplaceableTokenNode token -> $"ReplaceableTokenNode %O{token}"
 
-module Node =
-
-    let walk<'a> visit (initialValue: 'a) tree =
+    static member walk visit initialValue tree =
         let rec walk' (value: 'a) tree =
             match tree with
             | RootNode children
@@ -47,7 +45,7 @@ module Node =
                 visit value tree [] |> ignore
         walk' initialValue tree
 
-    let inline nodeCata fChildren fToken defaultValue = function
+    static member inline nodeCata fChildren fToken defaultValue = function
         | RootNode children
         | SectionHeadingNode (_, children)
         | SectionNode (_, children)
@@ -65,7 +63,7 @@ module Node =
         | _ ->
             defaultValue
 
-    let inline fold fChildren fToken value = function
+    static member inline fold fChildren fToken value = function
         | RootNode children
         | SectionHeadingNode (_, children)
         | SectionNode (_, children)
@@ -83,15 +81,15 @@ module Node =
         | _ ->
             value
 
-    let rec toText options node = nodeCata (List.map (toText options) >> String.concat "") (Token.toText options) "" node
+    static member toText options node = Node.nodeCata (List.map (Node.toText options) >> String.concat "") (Token.toText options) "" node
 
-    let rec position node = nodeCata (List.head >> position) Token.position (1, 1) node
+    static member position node = Node.nodeCata (List.head >> Node.position) Token.position (1, 1) node
 
-    let rec endPosition node = nodeCata (List.last >> endPosition) Token.endPosition (1, 1) node
+    static member endPosition node = Node.nodeCata (List.last >> Node.endPosition) Token.endPosition (1, 1) node
 
-    let getChildren = nodeCata id (fun _ -> []) []
+    static member getChildren = Node.nodeCata id (fun _ -> []) []
 
-    let addChild child node =
+    static member addChild child node =
         match node with
         | RootNode children -> RootNode (children @ [child])
         | SectionHeadingNode (name, children) -> SectionHeadingNode (name, children @ [child])
@@ -102,7 +100,7 @@ module Node =
         | CommentNode (text, children) -> CommentNode (text, children @ [child])
         | _ -> node
 
-    let addChildToBeginning child node =
+    static member addChildToBeginning child node =
         match node with
         | RootNode children -> RootNode ([child] @ children)
         | SectionHeadingNode (name, children) -> SectionHeadingNode (name, [child] @ children)
@@ -113,18 +111,18 @@ module Node =
         | CommentNode (text, children) -> CommentNode (text, [child] @ children)
         | _ -> node
 
-    let inline internal isWhitespace node = match node with TriviaNode (Whitespace _) -> true | _ -> false
-    let inline internal isReplaceable node = match node with ReplaceableTokenNode _ -> true | _ -> false
-    let internal isNotReplaceable = (isReplaceable >> not)
+    static member inline internal isWhitespace node = match node with TriviaNode (Whitespace _) -> true | _ -> false
+    static member inline internal isReplaceable node = match node with ReplaceableTokenNode _ -> true | _ -> false
+    static member internal isNotReplaceable = (Node.isReplaceable >> not)
 
     /// <summary>
     /// Replaces a list of target nodes with a list of replacement nodes in the tree and sets all token positions.
     /// </summary>
-    let internal replace predicate options target replacement tree =
+    static member internal replace predicate options target replacement tree =
         let joinReplaceableNodeText nodes =
             nodes
             |> List.choose (function ReplaceableTokenNode (Text _) | ReplaceableTokenNode (Whitespace _) as n -> Some n | _ -> None)
-            |> List.map (toText options)
+            |> List.map (Node.toText options)
             |> String.concat ""
 
         let rec replace' nextPosition tree =

@@ -2,6 +2,10 @@
 
 module MainShim
 
+#if FABLE_COMPILER
+()
+#else
 [<EntryPoint>]
 let main _ =
     0
+#endif

@@ -40,4 +40,8 @@
     <None Include="Properties\PublishProfiles\Release.pubxml.user" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="6.0.7" />
+  </ItemGroup>
+
 </Project>

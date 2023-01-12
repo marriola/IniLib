@@ -3,8 +3,8 @@
 open System.Text.RegularExpressions
 open IniLib.Utilities
 
-let private RE_WHITESPACE = new Regex("\\s");
-let private RE_ESCAPE_CHARACTERS = new Regex("[\a\b\f\n\r\t\v\"\'\\#: ]")
+let private RE_WHITESPACE = new Regex("\\s")
+let private RE_ESCAPE_CHARACTERS = new Regex(@"[\b\f\n\r\t\v""'\\#: ]")
 
 let inline newlineTrivia options = TriviaNode (Whitespace (options.newlineRule.toText(), 0, 0))
 let inline whitespaceTrivia space = TriviaNode (Whitespace (space, 0, 0))
