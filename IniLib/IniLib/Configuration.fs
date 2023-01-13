@@ -104,7 +104,7 @@ let private toMap options (RootNode children) =
                     |> List.map (fun ((n, (keys1, nodes1)) as entry) ->
                         if n = name then
                             let keys2 = getKeys children
-                            (name, (keys1 + keys2, sectionNode :: nodes1))
+                            (name, (keys1 + keys2, nodes1 @ [ sectionNode ]))
                         else
                             entry)
                 else
