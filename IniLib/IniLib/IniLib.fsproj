@@ -20,6 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="CommentPosition.fs" />
     <Compile Include="Utilities\List.fs" />
     <Compile Include="Utilities\Map.fs" />
     <Compile Include="Utilities\Operators.fs" />

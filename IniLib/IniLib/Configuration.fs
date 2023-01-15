@@ -142,6 +142,10 @@ let private tryGetFirstKey sectionName keyName config =
     tryGetMultivalueKey sectionName keyName config
     |> Option.map (List.item 0)
 
+let private tryGetNthKey sectionName keyName index config =
+    tryGetMultivalueKey sectionName keyName config
+    |> Option.map (List.item index)
+
 /// Looks up the value of a key in the configuration syntax tree, returning Some if the key is found and None if not.
 let tryGet sectionName keyName config =
     tryGetKey sectionName keyName config
@@ -151,6 +155,11 @@ let tryGet sectionName keyName config =
 /// If the key is a multivalue key, the last value is returned.
 let tryGetFirst sectionName keyName config =
     tryGetFirstKey sectionName keyName config
+    |> Option.map fst
+
+/// Looks up the value of a key in the configuration syntax tree, returning Some if the Nth key by that name is found, and None if not.
+let tryGetNth sectionName keyName index config =
+    tryGetNthKey sectionName keyName index config
     |> Option.map fst
 
 /// Looks up the values of a multivalue key in the configuration syntax tree, returning Some if the key is found and None if not.
@@ -170,6 +179,11 @@ let tryGetFirstInt sectionName keyName config =
     tryGetFirst sectionName keyName config
     |> Option.map int32
 
+/// Looks up the integer value of a key in the configuration syntax tree, returning Some if the Nth key by that name is found and None if not.
+let tryGetNthInt sectionName keyName index config =
+    tryGetNth sectionName keyName index config
+    |> Option.map int32
+
 /// Looks up the integer value of a key in the configuration syntax tree, returning Some if the key is found and None if not.
 let tryGetMultiValueInts sectionName keyName config =
     tryGetMultiValues sectionName keyName config
@@ -186,6 +200,11 @@ let tryGetFirstNode sectionName keyName config =
     tryGetFirstKey sectionName keyName config
     |> Option.map snd
 
+/// Looks up the node of a key in the configuration syntax tree, returning Some if the Nth key by that name is found and None if not.
+let tryGetNthNode sectionName keyName index config =
+    tryGetNthKey sectionName keyName index config
+    |> Option.map snd
+
 /// Looks up the nodes of a multivalue key in the configuration syntax tree, returning Some if the key is found and None if not.
 let tryGetMultiValueNodes sectionName keyName config =
     tryGetMultivalueKey sectionName keyName config
@@ -198,8 +217,38 @@ let tryGetSection sectionName config =
     |> Map.tryFind sectionName
 
 /// Looks up the node of a section in the configuration syntax tree, returning Some if the section is found and None if not.
-let tryGetSectionNode sectionName config =
+let tryGetSectionNodes sectionName config =
     Option.map snd (tryGetSection sectionName config)
+
+/// Looks up a key and returns all comments on the immediately preceding lines or on the same lines.
+let tryGetComments sectionName keyName config =
+    let rec tryGetComments' lastComments out nodes =
+        match nodes with
+        | [] ->
+            List.rev out
+        | SectionHeadingNode _::rest | TriviaNode _::rest ->
+            tryGetComments' [] out rest
+        | CommentNode _ as commentNode::rest ->
+            tryGetComments' (commentNode :: lastComments) out rest
+        | KeyNode (name, _, children) as keyNode::rest when name = keyName ->
+            let sameLineComment = List.tryFind Node.isComment children
+            let nextOut = lastComments @ out
+            let nextOut =
+                match sameLineComment with
+                | Some comment -> comment :: nextOut
+                | None -> nextOut
+            tryGetComments' [] nextOut rest
+        | _::rest ->
+            tryGetComments' [] out rest
+
+    let sectionNodes = tryGetSectionNodes sectionName config
+    match sectionNodes with
+    | None -> None
+    | Some sectionNodes ->
+        sectionNodes
+        |> List.collect (Node.getChildren >> tryGetComments' [] [])
+        |> List.map (function CommentNode (text, _) as commentNode -> text, commentNode)
+        |> Some
 
 /// Looks up the value of a key in the configuration.
 let get sectionName keyName config =
@@ -210,6 +259,11 @@ let get sectionName keyName config =
 /// If the key is a multivalue key, the last value is returned.
 let getFirst sectionName keyName config =
     tryGetFirst sectionName keyName config
+    |> Option.get
+
+/// Looks up the value of a key in the configuration, returning the Nth key by that name.
+let getNth sectionName keyName index config =
+    tryGetNth sectionName keyName index config
     |> Option.get
 
 /// Looks up the values of a multivalue key in the configuration. Returns a singleton list if multivalue keys are not allowed.
@@ -233,6 +287,11 @@ let getFirstInt sectionName keyName config =
     tryGetFirstInt sectionName keyName config
     |> Option.get
 
+/// Looks up the integer value of a key in the configuration, returning the Nth key by that name.
+let getFirstNth sectionName keyName index config =
+    tryGetNthInt sectionName keyName index config
+    |> Option.get
+
 /// Looks up the node of a key in the configuration syntax tree.
 let getNode sectionName keyName config =
     tryGetNode sectionName keyName config
@@ -244,9 +303,18 @@ let getFirstNode sectionName keyName config =
     tryGetFirstNode sectionName keyName config
     |> Option.get
 
+/// Looks up the node of a key in the configuration syntax tree, returning the Nth key by that name.
+let getNthNode sectionName keyName index config =
+    tryGetNthNode sectionName keyName index config
+    |> Option.get
+
 /// Looks up the node of a section in the configuration syntax tree.
-let getSectionNode sectionName config =
-    tryGetSectionNode sectionName config
+let getSectionNodes sectionName config =
+    tryGetSectionNodes sectionName config
+    |> Option.get
+
+let getComments sectionName keyName config =
+    tryGetComments sectionName keyName config
     |> Option.get
 
 let private RE_LEADING_WHITESPACE = new System.Text.RegularExpressions.Regex("^(\\s+)")
@@ -289,9 +357,11 @@ let add options sectionName keyName value config =
         let lastKeyIndex =
             lastMatchingKeyIndex
             |> Option.orElseWith (fun () -> List.tryFindIndexBack (function KeyNode _ -> true | _ -> false) children)
-            |> Option.defaultValue -1
 
-        let lastKeyText = if lastKeyIndex = -1 then "" else Node.toText options children.[lastKeyIndex]
+        let lastKeyText =
+            match lastKeyIndex with
+            | None -> Node.toText options children[0]
+            | Some lastKeyIndex -> Node.toText options children.[lastKeyIndex]
 
         // Insert a newline if the last key didn't end in a newline
         let newline = if lastKeyText.EndsWith("\n") then [] else [ NodeBuilder.newlineTrivia options ]
@@ -302,10 +372,12 @@ let add options sectionName keyName value config =
             if regexMatch.Success then
                 let whitespaceNode = NodeBuilder.whitespaceTrivia regexMatch.Groups[0].Value
                 let (KeyNode (name, value, (KeyNameNode _ as keyNameNode)::rest)) = keyNode
-                let keyNameNode = Node.addChildToBeginning whitespaceNode keyNameNode
+                let keyNameNode = Node.addChildToBeginning keyNameNode whitespaceNode
                 KeyNode (name, value, [keyNameNode] @ rest)
             else
                 keyNode
+
+        let lastKeyIndex = Option.defaultValue 0 lastKeyIndex
 
         let newSectionChildren = List.collect id [
             children.[0..lastKeyIndex]
@@ -326,8 +398,12 @@ let add options sectionName keyName value config =
         let newChildren =
             if sectionName = "<global>" && options.globalKeysRule = AllowGlobalKeys then
                 // Insert global section after initial comments, before all other sections
-                let comments = List.takeWhile (function TriviaNode _ | CommentNode _ -> true | _ -> false) children
-                comments @ [ nodesOut ] @ [ NodeBuilder.newlineTrivia options ] @ children[comments.Length..]
+                let nonCommentIndex =
+                    children
+                    |> List.tryFindIndex (function TriviaNode _ | CommentNode _ -> false | _ -> true)
+                    |> Option.defaultValue 0
+                children
+                |> List.insertManyAt nonCommentIndex [ nodesOut; NodeBuilder.newlineTrivia options ]
             else
                 // Insert a newline if the last node doesn't end with a newline, and add the section at the end
                 let lastChildText =
@@ -335,7 +411,11 @@ let add options sectionName keyName value config =
                     |> List.tryLast
                     |> Option.map (Node.toText options)
                     |> Option.defaultValue "\n"
-                let newline = if lastChildText.EndsWith("\n") then [] else [ NodeBuilder.newlineTrivia options ]
+                let newline =
+                    if lastChildText.EndsWith("\n") then
+                        []
+                    else
+                        [ NodeBuilder.newlineTrivia options; NodeBuilder.newlineTrivia options ]
                 children @ newline @ [ nodesOut ]
 
         let newTree = RootNode newChildren
@@ -357,6 +437,67 @@ let add options sectionName keyName value config =
         match section with
         | Some (_, sectionNodes) -> addToSection (List.last sectionNodes) keyNode
         | None -> addSectionWithKey sectionName keyNode
+
+/// Replaces the text of a comment.
+let changeComment options text (_, commentNode) (Configuration (tree, _) as config) =
+    let (CommentNode (_, commentChildren)) = commentNode
+    let commentText = List.filter Node.isReplaceable commentChildren
+    let newText = NodeBuilder.replaceableText text
+    let newTree = Node.replace Node.isReplaceable options commentText [ newText ] tree
+    Configuration (newTree, toMap options newTree)
+
+/// <summary>
+/// Adds a comment to a key, section or another comment.
+/// </summary>
+/// <param name="commentPosition">The relative position to add the comment.</param>
+/// <param name="options">The configuration options.</param>
+/// <param name="targetNode">The node to attach the comment to.</param>
+/// <param name="text">The text of the comment to add.</param>
+/// <param name="config">The configuration to modify.</param>
+let addComment commentPosition options targetNode text (Configuration (tree, _) as config) =
+    let commentNode =
+        text
+        |> NodeBuilder.comment options
+        |> Node.addChild (NodeBuilder.newlineTrivia options)
+    let targetNode =
+        match commentPosition, targetNode with
+        | OnSameLine, SectionNode (_, (SectionHeadingNode _ as sectionHeadingNode)::_) -> sectionHeadingNode
+        | _ -> targetNode
+
+    let next fContinue nextPosition children =
+        match List.tryFindIndex ((=) targetNode) children with
+        | None ->
+            fContinue nextPosition children
+        | Some targetIndex ->
+            let nextChildren =
+                match commentPosition, targetNode with
+                | OnPreviousLine, _ ->
+                    List.insertAt targetIndex commentNode children
+                | OnNextLine, _ ->
+                    let nextIndex = min (targetIndex + 1) (List.length children)
+                    let targetNodeWithNewline = NodeBuilder.addNewlineIfNeeded options targetNode
+                    children
+                    |> List.replace targetNode targetNodeWithNewline
+                    |> List.insertAt nextIndex commentNode
+                | OnSameLine, SectionNode ("<global>", _) -> 
+                    commentNode :: children
+                | OnSameLine, _ ->
+                    let targetChildren, _ =
+                        targetNode
+                        |> Node.getChildren
+                        |> Node.splitTrailingWhitespace (Node.toText options >> String.endsWith "\n")
+                    let nextTargetNode =
+                        targetNode
+                        |> Node.withChildren targetChildren
+                        |> Node.addChildren [
+                            NodeBuilder.spaceTrivia()
+                            commentNode
+                        ]
+                    List.replace targetNode nextTargetNode children
+            fContinue nextPosition nextChildren
+
+    let nextTree = Node.rebuildCata next options tree    
+    Configuration (nextTree, toMap options nextTree)
 
 /// Returns a new configuration with the key removed.
 let removeKey options sectionName keyName config =
@@ -431,6 +572,25 @@ let renameKey options sectionName keyName newKeyName config =
                     | _ ->
                         tree))
             
+    Configuration (newTree, toMap options newTree)
+
+let removeNode options targetNode (Configuration (tree, _) as config) =
+    let next fContinue nextPosition children =
+        match List.tryFindIndex ((=) targetNode) children with
+        | None ->
+            fContinue nextPosition children
+        | Some targetIndex ->
+            // If the target node contains a trailing newline, keep the newline
+            let _, newline =
+                targetNode
+                |> Node.getChildren
+                |> Node.splitTrailingWhitespace (Node.toText options >> String.endsWith "\n")
+            children
+            |> List.removeAt targetIndex
+            |> List.insertManyAt targetIndex newline
+            |> fContinue nextPosition
+
+    let newTree = Node.rebuildCata next options tree
     Configuration (newTree, toMap options newTree)
 
 let ofList options xs = List.fold (fun config (section, key, value) -> add options section key value config) empty xs

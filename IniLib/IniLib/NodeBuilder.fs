@@ -7,8 +7,15 @@ let private RE_WHITESPACE = new Regex("\\s")
 let private RE_ESCAPE_CHARACTERS = new Regex(@"[\b\f\n\r\t\v""'\\#: ]")
 
 let inline newlineTrivia options = TriviaNode (Whitespace (options.newlineRule.toText(), 0, 0))
+let inline spaceTrivia () = TriviaNode (Whitespace (" ", 0, 0))
 let inline whitespaceTrivia space = TriviaNode (Whitespace (space, 0, 0))
 let inline replaceableText text = ReplaceableTokenNode (Text (text, 0, 0))
+
+let addNewlineIfNeeded options node =
+    if String.endsWith "\n" (Node.toText options node) then
+        node
+    else
+        Node.addChild (newlineTrivia options) node
 
 let private escapes =
     Parser.escapeCodeToCharacter
@@ -85,7 +92,6 @@ let keyValue options value =
     let children = [
         whitespace
         [ replaceableText value ]
-        [ newlineTrivia options ]
     ]
 
     KeyValueNode (value, List.collect id children)
@@ -102,7 +108,8 @@ let key options name value =
         [ keyName options name ]
         @ assignmentToken
         @ [ keyValue options value ]
-
+        @ [ newlineTrivia options ]
+        
     KeyNode (name, value, children)
 
 let keys options keys =
@@ -125,3 +132,14 @@ let section options name children =
             sectionHeadingNode, newline
 
     SectionNode (name, sectionHeading @ children @ trailingNewline)
+
+let comment options text =
+    let commentIndicator =
+        match options.commentRule with
+        | HashComments | HashAndSemicolonComments -> '#'
+        | SemicolonComments -> ';'
+    let children =
+        [ TokenNode (CommentIndicator (commentIndicator, 0, 0))
+          TriviaNode (Whitespace (" ", 0, 0))
+          ReplaceableTokenNode (Text (text, 0, 0)) ]
+    CommentNode (text, children)

@@ -8,15 +8,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="NodeTests.fs" />
+    <Compile Include="NodeBuilderTests.fs" />
+    <Compile Include="LexerTests.fs" />
+    <Compile Include="ParserTests.fs" />
+    <Compile Include="WriteTests.fs" />
+    <Compile Include="Configuration\SectionTests.fs" />
+    <Compile Include="Configuration\CommentTests.fs" />
+    <Compile Include="Configuration\KeyTests.fs" />
     <Compile Include="Options\GlobalKeysRuleTests.fs" />
     <Compile Include="Options\NameValueDelimiterRuleTests.fs" />
     <Compile Include="Options\EscapeSequenceRuleTests.fs" />
     <Compile Include="Options\QuotationRuleTests.fs" />
     <Compile Include="Options\DuplicateKeyRuleTests.fs" />
     <Compile Include="Options\DuplicateSectionRuleTests.fs" />
-    <Compile Include="LexerTests.fs" />
-    <Compile Include="NodeBuilderTests.fs" />
-    <Compile Include="ConfigurationTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

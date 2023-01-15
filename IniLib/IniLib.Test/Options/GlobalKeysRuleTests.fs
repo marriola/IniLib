@@ -91,6 +91,7 @@ module GlobalKeysRuleTests =
 
         let expected = "this key = is global\n\
                         so is = this one\n\
+                        \n\
                         [Section 1]\n\
                         foo = bar"
         let actual = Configuration.toText options config

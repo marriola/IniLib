@@ -96,10 +96,10 @@ let parse (options: Options) tokens =
                 let nextText = text + t
 
                 if nextText.EndsWith("\n") then
-                    let nextNode = CommentNode (nextText.Trim(), List.rev (TokenNode token :: consumedTokens))
+                    let nextNode = CommentNode (nextText.Trim(), List.rev (ReplaceableTokenNode token :: consumedTokens))
                     Some nextNode, rest
                 else
-                    tryParseComment' nextText (TokenNode token :: consumedTokens) rest
+                    tryParseComment' nextText (ReplaceableTokenNode token :: consumedTokens) rest
 
             | _ ->
                 let nextNode = CommentNode (text.Trim(), List.rev consumedTokens)
@@ -223,13 +223,17 @@ let parse (options: Options) tokens =
             | _ ->
                 failwithf "Expected %s, got end of input" (expectedAfterName)
 
+        let inline splitTrailingWhitespace nodes = Node.splitTrailingWhitespace (fun _ -> true) nodes
+
         let rec parseKeyValue state =
             /// Consume a text token and continue if there is more input on the line, or produce a KeyValueNode
             let inline matchValueText (text: string) =
                 let inline terminate() =
+                    let consumedTokens = Node.ofToken state.input[0] :: state.consumedTokens
+                    let consumedTokens, trailingWhitespace = splitTrailingWhitespace (List.rev consumedTokens)
                     let keyValue = if state.quote = None then text.Trim() else text
-                    let keyValueNode = KeyValueNode (keyValue, List.rev (TokenNode state.input[0] :: state.consumedTokens))
-                    keyValue, keyValueNode, List.tail state.input
+                    let keyValueNode = KeyValueNode (keyValue, consumedTokens)
+                    trailingWhitespace, keyValue, keyValueNode, List.tail state.input
 
                 // Terminate if out of input, or if value ends in unescaped newline or quote
                 match state.input with
@@ -280,8 +284,9 @@ let parse (options: Options) tokens =
             | _, (CommentIndicator _)::_ ->
                 let value = Option.defaultValue "" state.text
                 let keyValue = value.Trim()
-                let keyValueNode = KeyValueNode (keyValue, List.rev state.consumedTokens)
-                keyValue, keyValueNode, state.input
+                let consumedTokens, trailingWhitespace = splitTrailingWhitespace (List.rev state.consumedTokens)
+                let keyValueNode = KeyValueNode (keyValue, consumedTokens)
+                trailingWhitespace, keyValue, keyValueNode, state.input
 
             // Add left bracket, right bracket, and assignment tokens verbatim
             | (Some value), (LeftBracket _ as token)::rest
@@ -303,9 +308,9 @@ let parse (options: Options) tokens =
                 let lastPosition = state.consumedTokens |> List.head |> Node.position
                 failwith $"Ran out of input reading key value at {lastPosition}"
 
-        let keyName, keyNameNode, tokens = parseKeyName { ParseKeyPartState.defaultFor tokens with consumedTokens = leadingWhitespace }
+        let keyName, keyNameNode, tokens = parseKeyName (ParseKeyPartState.defaultFor tokens)
         let assignment, tokens = matchAssignment tokens
-        let keyValue, keyValueNode, tokens = parseKeyValue (ParseKeyPartState.defaultFor tokens)
+        let trailingWhitespace, keyValue, keyValueNode, tokens = parseKeyValue (ParseKeyPartState.defaultFor tokens)
 
         let endsWithNewline =
             keyValueNode
@@ -319,9 +324,11 @@ let parse (options: Options) tokens =
             else tryParseComment tokens
 
         let keyNodeChildren =
-            [ markReplaceableNodes keyNameNode ]
+            leadingWhitespace
+            @ [ markReplaceableNodes keyNameNode ]
             @ assignment
             @ [ markReplaceableNodes keyValueNode ]
+            @ trailingWhitespace
             @ Option.toList comment
 
         let keyNode = KeyNode (keyName, keyValue, keyNodeChildren)
@@ -344,17 +351,22 @@ let parse (options: Options) tokens =
             // Consume remaining whitespace until end of line to create the SectionHeadingNode
             let nextLineIndex =
                 rest
-                |> List.findIndex (function
+                |> List.tryFindIndex (function
                     | Whitespace (text, _, _) when text.EndsWith("\n") -> true
                     | Whitespace _ -> false
                     | t -> failwith $"Expected whitespace or newline at {Token.position t}, got {t}")
 
-            let whitespace = List.map TriviaNode rest[..nextLineIndex]
-            let rest = rest[nextLineIndex + 1..]
+            let rest, whitespace =
+                match nextLineIndex with
+                | Some nextLineIndex -> rest[nextLineIndex + 1..], List.map TriviaNode rest[..nextLineIndex]
+                | None -> rest, []
             let children = (List.rev consumedTokens) @ [TokenNode bracketToken] @ whitespace
             let headingNode = markReplaceableNodes (SectionHeadingNode (sectionName, children))
 
             headingNode, sectionName, rest
+
+        | [] ->
+            failwith $"Expected text or ']' at ({Node.endPosition consumedTokens[0]}), got end of file"
 
     let rec parseKeys parsedKeys outNodes tokens =
         match tokens with

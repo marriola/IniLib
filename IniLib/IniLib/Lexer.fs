@@ -17,21 +17,18 @@ let lex options text =
         | HashAndSemicolonComments -> set "#;"
 
     let readLine firstLine firstColumn text =
-        let rec readLine' outputText line column last text =
-            let nextLine, nextColumn =
-                match text with
-                | '\n'::_ ->
-                    line + 1, 1
-                | _ ->
-                    line, column + 1
-            match last, text with
-            | Some '\n', _
-            | _, [] ->
-                text, line, column, Comment (new String(outputText |> List.rev |> Array.ofList), firstLine, firstColumn + 1)
-            | _, c::rest ->
-                readLine' (c :: outputText) nextLine nextColumn (Some c) rest
+        let rec readLine' outputText column text =
+            let nextColumn = column + 1
+            match text with
+            // Break on newline to force it to be its own token
+            | '\r'::_
+            | '\n'::_
+            | [] ->
+                text, firstLine, nextColumn, Comment (new String(outputText |> List.rev |> Array.ofList), firstLine, firstColumn + 1)
+            | c::rest ->
+                readLine' (c :: outputText) nextColumn rest
 
-        readLine' [] firstLine firstColumn None text
+        readLine' [] firstColumn text
 
     let readNumbers firstLine firstColumn text =
         let hexDigits = Set.ofList ([ '0' .. '9' ] @ [ 'a' .. 'f'] @ [ 'A' .. 'F' ])
