@@ -293,7 +293,7 @@ namespace IniEditor
                     else if (e.Label != null)
                     {
                         Time("Renamed in {0}ms", () => _configuration = Configuration.renameSection(_options, e.Node.Text, e.Label, _configuration));
-                        highlightedNode = Configuration.getSectionNode(e.Label, _configuration)[0];
+                        highlightedNode = Configuration.getSectionNodes(e.Label, _configuration)[0];
                     }
                     break;
 
@@ -778,7 +778,7 @@ namespace IniEditor
                 case "section":
                     {
                         var sectionName = _clickedNode.Text;
-                        var node = Configuration.tryGetSectionNode(sectionName, _configuration);
+                        var node = Configuration.tryGetSectionNodes(sectionName, _configuration);
                         SelectConfigurationNode(node?.Value[0]);
                     }
                     break;
