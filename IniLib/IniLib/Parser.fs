@@ -223,14 +223,12 @@ let parse (options: Options) tokens =
             | _ ->
                 failwithf "Expected %s, got end of input" (expectedAfterName)
 
-        let inline splitTrailingWhitespace nodes = Node.splitTrailingWhitespace (fun _ -> true) nodes
-
         let rec parseKeyValue state =
             /// Consume a text token and continue if there is more input on the line, or produce a KeyValueNode
             let inline matchValueText (text: string) =
                 let inline terminate() =
                     let consumedTokens = Node.ofToken state.input[0] :: state.consumedTokens
-                    let consumedTokens, trailingWhitespace = splitTrailingWhitespace (List.rev consumedTokens)
+                    let consumedTokens, trailingWhitespace = Node.splitTrailingWhitespace Operators.giveTrue (List.rev consumedTokens)
                     let keyValue = if state.quote = None then text.Trim() else text
                     let keyValueNode = KeyValueNode (keyValue, consumedTokens)
                     trailingWhitespace, keyValue, keyValueNode, List.tail state.input
@@ -284,7 +282,7 @@ let parse (options: Options) tokens =
             | _, (CommentIndicator _)::_ ->
                 let value = Option.defaultValue "" state.text
                 let keyValue = value.Trim()
-                let consumedTokens, trailingWhitespace = splitTrailingWhitespace (List.rev state.consumedTokens)
+                let consumedTokens, trailingWhitespace = Node.splitTrailingWhitespace Operators.giveTrue (List.rev state.consumedTokens)
                 let keyValueNode = KeyValueNode (keyValue, consumedTokens)
                 trailingWhitespace, keyValue, keyValueNode, state.input
 
@@ -316,7 +314,7 @@ let parse (options: Options) tokens =
             keyValueNode
             |> Node.getChildren
             |> List.tryLast
-            |> Option.map (Node.toText options >> String.endsWith "\n")
+            |> Option.map (Node.endsWith options "\n")
             |> Option.defaultValue false
 
         let comment, tokens =

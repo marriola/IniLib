@@ -26,19 +26,20 @@ let ``Adding key to existing section copies indentation of last key`` () =
     let options = Options.defaultOptions
     let text = """
 [Section 1]
-foo = bar"""
+    foo = bar"""
     let config =
         text
         |> Configuration.fromText options
         |> Configuration.add options "Section 1" "baz" "quux"
 
+    let actual = Configuration.toText options config
     let expected = """
 [Section 1]
-foo = bar
-baz = quux
+    foo = bar
+    baz = quux
 """
 
-    Assert.Equal(expected, Configuration.toText options config)
+    Assert.Equal(expected, actual)
 
 [<Fact>]
 let ``Adding key to section that does not end in newline inserts a newline after the last key`` () =
@@ -65,6 +66,36 @@ let ``Add a key to an empty section`` () =
         |> Configuration.fromText options
         |> Configuration.add options "Section 1" "foo" "bar"
     let expected = "[Section 1]\n\
+                    foo = bar\n"
+    let actual = Configuration.toText options config
+    Assert.Equal(expected, actual)
+
+[<Fact>]
+let ``Add a key to an empty global section`` () =
+    let options =
+        Options.defaultOptions
+        |> Options.withNewlineRule LfNewline
+        |> Options.withGlobalKeysRule AllowGlobalKeys
+    let text = ""
+    let config =
+        text
+        |> Configuration.fromText options
+        |> Configuration.add options "<global>" "foo" "bar"
+    let expected = "foo = bar\n\n"
+    let actual = Configuration.toText options config
+    Assert.Equal(expected, actual)
+
+[<Fact>]
+let ``Add a key to an empty section inserts key after comments`` () =
+    let options = Options.defaultOptions.WithNewlineRule LfNewline
+    let text = "[Section 1]\n\
+                # Not a lot going on here"
+    let config =
+        text
+        |> Configuration.fromText options
+        |> Configuration.add options "Section 1" "foo" "bar"
+    let expected = "[Section 1]\n\
+                    # Not a lot going on here\n\
                     foo = bar\n"
     let actual = Configuration.toText options config
     Assert.Equal(expected, actual)

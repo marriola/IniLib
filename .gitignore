@@ -399,3 +399,5 @@ FodyWeavers.xsd
 
 # Fable transpiled JavaScript
 *.fs.js
+*.fs.js.map
+

@@ -55,6 +55,7 @@ with
             let sectionDic = dic[sectionName]
             sectionDic
 
+/// The empty configuration.
 let empty = Configuration (RootNode [], SectionMap Map.empty)
 
 let private toMap options (RootNode children) =
@@ -117,12 +118,12 @@ let private toMap options (RootNode children) =
 
     getSections [] children
 
-/// The section keys of the configuration.
+/// Returns the section keys of the configuration.
 let sections config =
     let (Configuration (_, dic)) = config
     dic.Keys()
 
-/// The keys of the section.
+/// Returns the keys of the section.
 let keys sectionName config =
     let (Configuration (_, dic)) = config
     let sectionDic = dic[sectionName]
@@ -134,73 +135,77 @@ let private tryGetMultivalueKey sectionName keyName (Configuration (_, dic)) =
     |> Map.tryFind sectionName
     |> Option.bind (fst >> KeyMap.unwrap >> Map.tryFind keyName)
 
+/// Gets the key entry from the configuration, returning Some if it is found and None if not.
+/// If duplicate keys are allowed, the last entry is returned.
 let private tryGetKey sectionName keyName config =
     tryGetMultivalueKey sectionName keyName config
     |> Option.map (List.last)
 
+/// Gets the first key entry from the configuration, returning Some if it is found and None if not.
 let private tryGetFirstKey sectionName keyName config =
     tryGetMultivalueKey sectionName keyName config
     |> Option.map (List.item 0)
 
+/// Gets the Nth key entry of a multivalue key from the configuration, returning Some if the key is found and None if not.
 let private tryGetNthKey sectionName keyName index config =
     tryGetMultivalueKey sectionName keyName config
     |> Option.map (List.item index)
 
-/// Looks up the value of a key in the configuration syntax tree, returning Some if the key is found and None if not.
+/// Looks up the value of a key in the configuration, returning Some if the key is found and None if not.
+/// If duplicate keys are allowed, the last value is returned.
 let tryGet sectionName keyName config =
     tryGetKey sectionName keyName config
     |> Option.map fst
 
-/// Looks up the value of a key in the configuration syntax tree, returning Some if the key is found and None if not.
-/// If the key is a multivalue key, the last value is returned.
+/// Looks up the value of a key in the configuration, returning Some if the key is found and None if not.
 let tryGetFirst sectionName keyName config =
     tryGetFirstKey sectionName keyName config
     |> Option.map fst
 
-/// Looks up the value of a key in the configuration syntax tree, returning Some if the Nth key by that name is found, and None if not.
+/// Looks up the Nth value of a multivalue key in the configuration, returning Some if the key is found, and None if not.
 let tryGetNth sectionName keyName index config =
     tryGetNthKey sectionName keyName index config
     |> Option.map fst
 
-/// Looks up the values of a multivalue key in the configuration syntax tree, returning Some if the key is found and None if not.
+/// Looks up the values of a multivalue key in the configuration, returning Some if the key is found and None if not.
 /// Returns a singleton list if multivalue keys are not allowed.
 let tryGetMultiValues sectionName keyName config =
     tryGetMultivalueKey sectionName keyName config
     |> Option.map (List.map fst)
 
-/// Looks up the integer value of a key in the configuration syntax tree, returning Some if the key is found and None if not.
+/// Looks up the integer value of a key in the configuration, returning Some if the key is found and None if not.
+/// If duplicate keys are allowed, the last value is returned.
 let tryGetInt sectionName keyName config =
     tryGet sectionName keyName config
     |> Option.map int32
 
-/// Looks up the integer value of a key in the configuration syntax tree, returning Some if the key is found and None if not.
-/// If the key is a multivalue key, the last value is returned.
+/// Looks up the integer value of a key in the configuration, returning Some if the key is found and None if not.
 let tryGetFirstInt sectionName keyName config =
     tryGetFirst sectionName keyName config
     |> Option.map int32
 
-/// Looks up the integer value of a key in the configuration syntax tree, returning Some if the Nth key by that name is found and None if not.
+/// Looks up the Nth integer value of a multivalue key in the configuration, returning Some if the key is found and None if not.
 let tryGetNthInt sectionName keyName index config =
     tryGetNth sectionName keyName index config
     |> Option.map int32
 
-/// Looks up the integer value of a key in the configuration syntax tree, returning Some if the key is found and None if not.
+/// Looks up the integer values of a key in the configuration, returning Some if the key is found and None if not.
 let tryGetMultiValueInts sectionName keyName config =
     tryGetMultiValues sectionName keyName config
     |> Option.map (List.map int32)
 
 /// Looks up the node of a key in the configuration syntax tree, returning Some if the key is found and None if not.
+/// If duplicate keys are allowed, the last node is returned.
 let tryGetNode sectionName keyName config =
     tryGetKey sectionName keyName config
     |> Option.map snd
 
-/// Looks up the node of a key in the configuration syntax tree, returning Some if the key is found and None if not.
-/// If the key is a multivalue key, the last value is returned.
+/// Looks up the first node of a key in the configuration syntax tree, returning Some if the key is found and None if not.
 let tryGetFirstNode sectionName keyName config =
     tryGetFirstKey sectionName keyName config
     |> Option.map snd
 
-/// Looks up the node of a key in the configuration syntax tree, returning Some if the Nth key by that name is found and None if not.
+/// Looks up the Nth node of a multivalue key in the configuration syntax tree, returning Some if the key is found and None if not.
 let tryGetNthNode sectionName keyName index config =
     tryGetNthKey sectionName keyName index config
     |> Option.map snd
@@ -210,6 +215,7 @@ let tryGetMultiValueNodes sectionName keyName config =
     tryGetMultivalueKey sectionName keyName config
     |> Option.map (List.map snd)
 
+/// Looks up the section entry in the configuration, returning Some if the section is found and None if not.
 let tryGetSection sectionName config =
     let (Configuration (_, dic)) = config
     dic
@@ -251,17 +257,17 @@ let tryGetComments sectionName keyName config =
         |> Some
 
 /// Looks up the value of a key in the configuration.
+/// If duplicate keys are allowed, the last value is returned.
 let get sectionName keyName config =
     tryGet sectionName keyName config
     |> Option.get
 
-/// Looks up the value of a key in the configuration.
-/// If the key is a multivalue key, the last value is returned.
+/// Looks up the first value of a key in the configuration.
 let getFirst sectionName keyName config =
     tryGetFirst sectionName keyName config
     |> Option.get
 
-/// Looks up the value of a key in the configuration, returning the Nth key by that name.
+/// Looks up the Nth value of a multivalue key in the configuration.
 let getNth sectionName keyName index config =
     tryGetNth sectionName keyName index config
     |> Option.get
@@ -277,42 +283,43 @@ let getMultiValueNodes sectionName keyName config =
     |> Option.get
 
 /// Looks up the integer value of a key in the configuration.
+/// If duplicate keys are allowed, the last value is returned.
 let getInt sectionName keyName config =
     tryGetInt sectionName keyName config
     |> Option.get
 
 /// Looks up the integer value of a key in the configuration.
-/// If the key is a multivalue key, the last value is returned.
 let getFirstInt sectionName keyName config =
     tryGetFirstInt sectionName keyName config
     |> Option.get
 
-/// Looks up the integer value of a key in the configuration, returning the Nth key by that name.
+/// Looks up the Nth integer value of a multivalue key in the configuration.
 let getFirstNth sectionName keyName index config =
     tryGetNthInt sectionName keyName index config
     |> Option.get
 
 /// Looks up the node of a key in the configuration syntax tree.
+/// If duplicate keys are allowed, the last value is returned.
 let getNode sectionName keyName config =
     tryGetNode sectionName keyName config
     |> Option.get
 
 /// Looks up the node of a key in the configuration syntax tree.
-/// If the key is a multivalue key, the last value is returned.
 let getFirstNode sectionName keyName config =
     tryGetFirstNode sectionName keyName config
     |> Option.get
 
-/// Looks up the node of a key in the configuration syntax tree, returning the Nth key by that name.
+/// Looks up the Nth node of a multivalue key in the configuration syntax tree.
 let getNthNode sectionName keyName index config =
     tryGetNthNode sectionName keyName index config
     |> Option.get
 
-/// Looks up the node of a section in the configuration syntax tree.
+/// Looks up the nodes of a section in the configuration syntax tree.
 let getSectionNodes sectionName config =
     tryGetSectionNodes sectionName config
     |> Option.get
 
+/// Looks up the key and returns all comments on the previous lines and the same line.
 let getComments sectionName keyName config =
     tryGetComments sectionName keyName config
     |> Option.get
@@ -323,122 +330,98 @@ let private RE_LEADING_WHITESPACE = new System.Text.RegularExpressions.Regex("^(
 let add options sectionName keyName value config =
     let (Configuration (tree, dic)) = config
 
-    let getKeyNodeChildren = function
-        | KeyNode (_, _, KeyNameNode _ :: TokenNode (Assignment _) :: KeyValueNode (_, children) :: _)
-        | KeyNode (_, _, KeyNameNode _ :: KeyValueNode (_, children) :: _) ->
-            children
-
     let replace sectionName keyName value =
         // Single key already exists, replace value and existing text nodes
         let section = dic.[sectionName]
         let keyNode::_ = section.GetNodes(keyName)
-        let target = List.filter Node.isReplaceable (getKeyNodeChildren keyNode)
+        let target =
+            keyNode
+            |> Node.getChildren
+            |> List.find (function KeyValueNode _ -> true | _ -> false)
+            |> Node.getChildren
+            |> List.filter Node.isReplaceable
 
         // Create new token node and replace original nodes
         let (KeyValueNode (_, keyValueChildren)) = NodeBuilder.keyValue options value
         let newText = List.filter Node.isReplaceable keyValueChildren
         let newTree = Node.replace Node.isReplaceable options target newText tree
-        let newDic = toMap options newTree
+        Configuration (newTree, toMap options newTree)
 
-        Configuration (newTree, newDic)
-
-    let addToSection (SectionNode (sectionName, children) as sectionNode) keyNode =
+    let addToSection (SectionNode (_, children) as sectionNode) keyNode =
         // If multivalue keys are allowed, add after the last key of the same name.
         // If not found, or if multivalue keys are not allowed, add after the last key.
         let lastMatchingKeyIndex =
             match options.duplicateKeyRule with
-            | DuplicateKeyAddsValue ->
-                List.tryFindIndexBack
-                    (function KeyNode (kn, _, _) when keyName = kn -> true | _ -> false)
-                    children
-            | _ ->
-                None
+            | DuplicateKeyAddsValue -> List.tryFindIndexBack (function KeyNode (kn, _, _) when keyName = kn -> true | _ -> false) children
+            | _ -> None
 
-        let lastKeyIndex =
+        // If there are no keys, try the last comment, then the section heading.
+        // There should always be a section heading, since if global keys are allowed,
+        // and the configuration is empty, there is nothing to parse to make it go into this branch.
+        let insertIndex, previousNode =
             lastMatchingKeyIndex
             |> Option.orElseWith (fun () -> List.tryFindIndexBack (function KeyNode _ -> true | _ -> false) children)
-
-        let lastKeyText =
-            match lastKeyIndex with
-            | None -> Node.toText options children[0]
-            | Some lastKeyIndex -> Node.toText options children.[lastKeyIndex]
+            |> Option.orElseWith (fun () -> List.tryFindIndexBack (function CommentNode _ | SectionHeadingNode _ -> true | _ -> false) children)
+            |> Option.map (fun i -> i, children[i])
+            |> Option.get
 
         // Insert a newline if the last key didn't end in a newline
+        let lastKeyText = Node.toText options previousNode
         let newline = if lastKeyText.EndsWith("\n") then [] else [ NodeBuilder.newlineTrivia options ]
 
         // Copy leading whitespace from last key
-        let keyNode =
-            let regexMatch = RE_LEADING_WHITESPACE.Match(lastKeyText)
-            if regexMatch.Success then
-                let whitespaceNode = NodeBuilder.whitespaceTrivia regexMatch.Groups[0].Value
-                let (KeyNode (name, value, (KeyNameNode _ as keyNameNode)::rest)) = keyNode
-                let keyNameNode = Node.addChildToBeginning keyNameNode whitespaceNode
-                KeyNode (name, value, [keyNameNode] @ rest)
-            else
-                keyNode
+        let outNodes =
+            match lastKeyText with
+            | RegexMatch RE_LEADING_WHITESPACE g ->
+                newline @ [ keyNode |> Node.addChildToBeginning (NodeBuilder.whitespaceTrivia g.Value) ]
+            | _ ->
+                newline @ [ keyNode ]
 
-        let lastKeyIndex = Option.defaultValue 0 lastKeyIndex
-
-        let newSectionChildren = List.collect id [
-            children.[0..lastKeyIndex]
-            newline
-            [ keyNode ]
-            children.[lastKeyIndex + 1..]
-        ]
-
-        let newSectionNode = SectionNode (sectionName, newSectionChildren)
+        let newSectionNode = Node.insertChildrenAt (insertIndex + 1) outNodes sectionNode
         let newTree = Node.replace ((=) sectionNode) options [sectionNode] [newSectionNode] tree
-        let newDic = toMap options newTree
-
-        Configuration (newTree, newDic)
+        Configuration (newTree, toMap options newTree)
 
     let addSectionWithKey sectionName keyNode =
         let (RootNode children) = tree
-        let nodesOut = NodeBuilder.section options sectionName [ keyNode ]
+        let sectionNode = NodeBuilder.section options sectionName [ keyNode ]
         let newChildren =
+            let newlineTrivia = NodeBuilder.newlineTrivia options
             if sectionName = "<global>" && options.globalKeysRule = AllowGlobalKeys then
                 // Insert global section after initial comments, before all other sections
                 let nonCommentIndex =
                     children
                     |> List.tryFindIndex (function TriviaNode _ | CommentNode _ -> false | _ -> true)
                     |> Option.defaultValue 0
-                children
-                |> List.insertManyAt nonCommentIndex [ nodesOut; NodeBuilder.newlineTrivia options ]
+                List.insertManyAt nonCommentIndex [ sectionNode; newlineTrivia ] children
             else
                 // Insert a newline if the last node doesn't end with a newline, and add the section at the end
-                let lastChildText =
+                let newline =
                     children
                     |> List.tryLast
-                    |> Option.map (Node.toText options)
-                    |> Option.defaultValue "\n"
-                let newline =
-                    if lastChildText.EndsWith("\n") then
-                        []
-                    else
-                        [ NodeBuilder.newlineTrivia options; NodeBuilder.newlineTrivia options ]
-                children @ newline @ [ nodesOut ]
+                    |> Option.map (fun n -> if Node.endsWith options "\n" n then [] else [ newlineTrivia; newlineTrivia ])
+                    |> Option.defaultValue []
+                children @ newline @ [ sectionNode ]
 
-        let newTree = RootNode newChildren
-        let newDic = toMap options newTree
-        Configuration (newTree, newDic)
+        let newTree = Node.renumber options (RootNode newChildren)
+        Configuration (newTree, toMap options newTree)
 
     let section = Map.tryFind sectionName (SectionMap.unwrap dic)
     let key = Option.bind (fst >> KeyMap.unwrap >> Map.tryFind keyName) section
 
-    match key with
-    | Some _ ->
+    match section, key with
+    | Some (_, sectionNodes), Some _ ->
         match options.duplicateKeyRule with
         | DisallowDuplicateKeys
-        | DuplicateKeyReplacesValue -> replace sectionName keyName value
-        | DuplicateKeyAddsValue -> addToSection (section |> Option.get |> snd |> List.last) (NodeBuilder.key options keyName value)
-    | None ->
-        // Key doesn't exist, create new key node
-        let keyNode = NodeBuilder.key options keyName value
-        match section with
-        | Some (_, sectionNodes) -> addToSection (List.last sectionNodes) keyNode
-        | None -> addSectionWithKey sectionName keyNode
+        | DuplicateKeyReplacesValue ->
+            replace sectionName keyName value
+        | DuplicateKeyAddsValue ->
+            addToSection (List.last sectionNodes) (NodeBuilder.key options keyName value)
+    | Some (_, sectionNodes), None ->
+        addToSection (List.last sectionNodes) (NodeBuilder.key options keyName value)
+    | None, None ->
+        addSectionWithKey sectionName (NodeBuilder.key options keyName value)
 
-/// Replaces the text of a comment.
+/// Returns a new configuration with the text of the comment replaced.
 let changeComment options text (_, commentNode) (Configuration (tree, _) as config) =
     let (CommentNode (_, commentChildren)) = commentNode
     let commentText = List.filter Node.isReplaceable commentChildren
@@ -447,7 +430,7 @@ let changeComment options text (_, commentNode) (Configuration (tree, _) as conf
     Configuration (newTree, toMap options newTree)
 
 /// <summary>
-/// Adds a comment to a key, section or another comment.
+/// Returns a new configuration with a comment inserted next to another node.
 /// </summary>
 /// <param name="commentPosition">The relative position to add the comment.</param>
 /// <param name="options">The configuration options.</param>
@@ -485,19 +468,18 @@ let addComment commentPosition options targetNode text (Configuration (tree, _) 
                     let targetChildren, _ =
                         targetNode
                         |> Node.getChildren
-                        |> Node.splitTrailingWhitespace (Node.toText options >> String.endsWith "\n")
+                        |> Node.splitTrailingWhitespace (Node.endsWith options "\n")
                     let nextTargetNode =
                         targetNode
-                        |> Node.withChildren targetChildren
-                        |> Node.addChildren [
+                        |> Node.withChildren (targetChildren @ [
                             NodeBuilder.spaceTrivia()
                             commentNode
-                        ]
+                        ])
                     List.replace targetNode nextTargetNode children
             fContinue nextPosition nextChildren
 
-    let nextTree = Node.rebuildCata next options tree    
-    Configuration (nextTree, toMap options nextTree)
+    let newTree = Node.rebuildCata next options tree    
+    Configuration (newTree, toMap options newTree)
 
 /// Returns a new configuration with the key removed.
 let removeKey options sectionName keyName config =
@@ -509,17 +491,15 @@ let removeKey options sectionName keyName config =
         keys
         |> List.rev
         |> List.fold (fun tree (_, keyNode) -> Node.replace ((=) keyNode) options [keyNode] [] tree) tree
-    let newDic = toMap options newTree
     
-    Configuration (newTree, newDic)
+    Configuration (newTree, toMap options newTree)
 
 /// Returns a new configuration with the section removed.
 let removeSection options sectionName config =
     let (Configuration (tree, dic)) = config
     let sectionNodes = dic.GetNodes sectionName
     let newTree = List.fold (fun tree sectionNode -> Node.replace ((=) sectionNode) options [sectionNode] [] tree) tree sectionNodes
-    let newDic = toMap options newTree
-    Configuration (newTree, newDic)
+    Configuration (newTree, toMap options newTree)
 
 /// Returns a new configuration with the section renamed.
 let renameSection options sectionName newName config =
@@ -544,9 +524,7 @@ let renameSection options sectionName newName config =
             let newSection = Node.replace Node.isReplaceable options sectionHeadingText newText newSection
             Node.replace ((=) sectionNode) options [sectionNode] [newSection] tree)
 
-    let newDic = toMap options newTree
-    
-    Configuration (newTree, newDic)
+    Configuration (newTree, toMap options newTree)
 
 /// Returns a new configuration with the key renamed.
 let renameKey options sectionName keyName newKeyName config =
@@ -574,6 +552,7 @@ let renameKey options sectionName keyName newKeyName config =
             
     Configuration (newTree, toMap options newTree)
 
+/// Returns a new configuration without the node.
 let removeNode options targetNode (Configuration (tree, _) as config) =
     let next fContinue nextPosition children =
         match List.tryFindIndex ((=) targetNode) children with
@@ -584,7 +563,7 @@ let removeNode options targetNode (Configuration (tree, _) as config) =
             let _, newline =
                 targetNode
                 |> Node.getChildren
-                |> Node.splitTrailingWhitespace (Node.toText options >> String.endsWith "\n")
+                |> Node.splitTrailingWhitespace (Node.endsWith options "\n")
             children
             |> List.removeAt targetIndex
             |> List.insertManyAt targetIndex newline
@@ -593,7 +572,10 @@ let removeNode options targetNode (Configuration (tree, _) as config) =
     let newTree = Node.rebuildCata next options tree
     Configuration (newTree, toMap options newTree)
 
+/// Builds a new configuration from the given list of key-value pairs.
 let ofList options xs = List.fold (fun config (section, key, value) -> add options section key value config) empty xs
+
+/// Builds a new configuration from the given sequence of key-value pairs.
 let ofSeq options seq = Seq.fold (fun config (section, key, value) -> add options section key value config) empty seq
 
 /// Parses a configuration from text.
@@ -647,11 +629,7 @@ let private convertNameValueDelimiters options (RootNode children) =
                         match options.nameValueDelimiterSpacingRule with
                         | BothSides | LeftOnly -> [ NodeBuilder.whitespaceTrivia " " ]
                         | _ -> []
-                    let keyNameNodeStripped =
-                        keyNameChildren
-                        |> List.rev
-                        |> List.skipWhile Node.isWhitespace
-                        |> List.rev
+                    let keyNameNodeStripped, _ = Node.splitTrailingWhitespace Operators.giveTrue keyNameChildren
                     let node = KeyNameNode (name, keyNameNodeStripped @ leftWhitespace)
                     if options.nameValueDelimiterRule = NoDelimiter then NodeBuilder.sanitize options node else node
                 let assignmentNode =
@@ -663,9 +641,7 @@ let private convertNameValueDelimiters options (RootNode children) =
                         match options.nameValueDelimiterSpacingRule with
                         | BothSides | RightOnly -> [ NodeBuilder.whitespaceTrivia " " ]
                         | _ -> []
-                    let keyValueNodeStripped =
-                        keyValueChildren
-                        |> List.skipWhile Node.isWhitespace
+                    let keyValueNodeStripped, _ = Node.splitLeadingWhitespace Operators.giveTrue keyValueChildren
                     KeyValueNode (value, rightWhitespace @ keyValueNodeStripped)
                 KeyNode (name, value, [ keyNameNode ] @ assignmentNode @ [ keyValueNode ] @ rest)
                 
@@ -681,6 +657,7 @@ let private convertNameValueDelimiters options (RootNode children) =
                 | node ->
                     node)
         SectionNode (name, newSectionChildren)
+
     let newChildren =
         children
         |> List.map (function

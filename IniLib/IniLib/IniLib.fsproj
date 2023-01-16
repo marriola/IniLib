@@ -20,7 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="CommentPosition.fs" />
+    <Compile Include="Utilities\ActivePatterns.fs" />
     <Compile Include="Utilities\List.fs" />
     <Compile Include="Utilities\Map.fs" />
     <Compile Include="Utilities\Operators.fs" />
@@ -32,6 +32,7 @@
     <Compile Include="Node.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="NodeBuilder.fs" />
+    <Compile Include="CommentPosition.fs" />
     <Compile Include="Configuration.fs" />
     <Compile Include="MainShim.fs" />
   </ItemGroup>

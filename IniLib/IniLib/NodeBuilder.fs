@@ -28,12 +28,13 @@ let private escape s =
     ||> List.fold (fun s (escapeCode, escapedChar) -> String.replace (string escapedChar) ("\\" + string escapeCode) s)
 
 let private escapeNode constructor node text children =
-    if RE_ESCAPE_CHARACTERS.IsMatch(text) then
+    match text with
+    | RegexMatch RE_ESCAPE_CHARACTERS _ ->
         let prologue = children |> List.takeWhile Node.isNotReplaceable
         let epilogue = children |> List.rev |> List.takeWhile Node.isNotReplaceable |> List.rev
         let nameText = [ replaceableText (escape text) ]
         constructor (text, prologue @ nameText @ epilogue)
-    else
+    | _ ->
         node
 
 let private quoteNode constructor node text children =
