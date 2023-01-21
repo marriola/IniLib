@@ -64,6 +64,26 @@ with
         | _ ->
             defaultValue
 
+    /// Gets the first text field of the node. If the node has no text field, returns "".
+    static member getText1 node =
+        match node with
+        | SectionNode (text, _)
+        | SectionHeadingNode (text, _)
+        | KeyNode (text, _, _)
+        | KeyNameNode (text, _)
+        | KeyValueNode (text, _)
+        | CommentNode (text, _) ->
+            text
+
+        | _ ->
+            ""
+
+    /// Gets the second text field of the node. If the node has no second text field, returns "".
+    static member getText2 node =
+        match node with
+        | KeyNode (_, text, _) -> text
+        | _ -> ""
+
     static member ofToken token =
         match token with
         | Whitespace _ -> TriviaNode token
@@ -78,6 +98,31 @@ with
     static member endPosition node = Node.walkCata (List.last >> Node.endPosition) Token.endPosition (1, 1) node
 
     static member getChildren node = Node.walkCata id (fun _ -> []) [] node
+            
+    static member hasChild predicate node = node |> Node.getChildren |> List.exists predicate
+
+    static member startsWithChild predicate node = node |> Node.getChildren |> List.head |> predicate
+
+    static member endsWithChild predicate node = node |> Node.getChildren |> List.last |> predicate
+
+    static member findChildren predicate node = node |> Node.getChildren |> List.filter predicate
+
+    static member findChild predicate node = node |> Node.getChildren |> List.find predicate
+
+    static member tryFindChild predicate node = node |> Node.getChildren |> List.tryFind predicate
+
+    static member findParent tree targetNode =
+        let children = Node.getChildren tree
+        match List.tryFind ((=) targetNode) children with
+        | Some _ -> Some tree
+        | None ->
+            List.fold
+                (fun result node ->
+                    match result with
+                    | Some _ -> result
+                    | None -> Node.findParent node targetNode)
+                None
+                children
             
     static member internal setChildren fChildren node =
         match node with

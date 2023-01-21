@@ -222,12 +222,13 @@ let tryGetSection sectionName config =
     |> SectionMap.unwrap
     |> Map.tryFind sectionName
 
-/// Looks up the node of a section in the configuration syntax tree, returning Some if the section is found and None if not.
+/// Returns the section nodes identified by the given section name if found in the configuration, otherwise returns None.
 let tryGetSectionNodes sectionName config =
     Option.map snd (tryGetSection sectionName config)
 
-/// Looks up a key and returns all comments on the immediately preceding lines or on the same lines.
-let tryGetComments sectionName keyName config =
+/// Returns all comments on the immediately preceding lines or on the same line as the node if found in the tree, otherwise
+/// returns None.
+let tryGetComments targetNode (Configuration (tree, _) as config) =
     let rec tryGetComments' lastComments out nodes =
         match nodes with
         | [] ->
@@ -236,8 +237,8 @@ let tryGetComments sectionName keyName config =
             tryGetComments' [] out rest
         | CommentNode _ as commentNode::rest ->
             tryGetComments' (commentNode :: lastComments) out rest
-        | KeyNode (name, _, children) as keyNode::rest when name = keyName ->
-            let sameLineComment = List.tryFind Node.isComment children
+        | node::rest when node = targetNode ->
+            let sameLineComment = Node.tryFindChild Node.isComment node
             let nextOut = lastComments @ out
             let nextOut =
                 match sameLineComment with
@@ -247,16 +248,27 @@ let tryGetComments sectionName keyName config =
         | _::rest ->
             tryGetComments' [] out rest
 
-    let sectionNodes = tryGetSectionNodes sectionName config
-    match sectionNodes with
+    match Node.findParent tree targetNode with
     | None -> None
-    | Some sectionNodes ->
-        sectionNodes
-        |> List.collect (Node.getChildren >> tryGetComments' [] [])
-        |> List.map (function CommentNode (text, _) as commentNode -> text, commentNode)
+    | Some parent ->
+        parent
+        |> Node.getChildren
+        |> tryGetComments' [] []
+        |> List.map (function CommentNode (text, _) as node -> text, node)
         |> Some
 
-/// Looks up the value of a key in the configuration.
+/// Returns all comments on the preceding lines and the same line as the key if found in the section, otherwise returns None.
+let tryGetKeyComments sectionName keyName config =
+    let getNodeComments n = Option.defaultValue [] (tryGetComments n config)
+    let getAllComments =
+        Node.getChildren
+        >> List.filter (Node.getText1 >> (=) keyName)
+        >> List.collect getNodeComments
+    config
+    |> tryGetSectionNodes sectionName
+    |> Option.map (List.collect getAllComments)
+
+/// Returns the value of a key in the configuration.
 /// If duplicate keys are allowed, the last value is returned.
 let get sectionName keyName config =
     tryGet sectionName keyName config
