@@ -96,7 +96,7 @@ let parse (options: Options) tokens =
                 let nextText = text + t
 
                 if nextText.EndsWith("\n") then
-                    let nextNode = CommentNode (nextText.Trim(), List.rev (ReplaceableTokenNode token :: consumedTokens))
+                    let nextNode = CommentNode (nextText.Trim(), List.rev (TriviaNode token :: consumedTokens))
                     Some nextNode, rest
                 else
                     tryParseComment' nextText (ReplaceableTokenNode token :: consumedTokens) rest
@@ -321,6 +321,15 @@ let parse (options: Options) tokens =
             if endsWithNewline then None, tokens
             else tryParseComment tokens
 
+        let comment, newline =
+            match comment with
+            | None -> None, None
+            | Some comment ->
+                let commentChildren = Node.getChildren comment
+                let commentChildren, newline = Node.splitTrailingWhitespace (Node.endsWith options "\n") commentChildren
+                let comment = CommentNode (Node.joinReplaceableText options commentChildren, commentChildren)
+                Some comment, List.tryHead newline
+
         let keyNodeChildren =
             leadingWhitespace
             @ [ markReplaceableNodes keyNameNode ]
@@ -328,6 +337,7 @@ let parse (options: Options) tokens =
             @ [ markReplaceableNodes keyValueNode ]
             @ trailingWhitespace
             @ Option.toList comment
+            @ Option.toList newline
 
         let keyNode = KeyNode (keyName, keyValue, keyNodeChildren)
 

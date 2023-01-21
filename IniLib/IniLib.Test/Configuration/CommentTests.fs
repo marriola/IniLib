@@ -4,7 +4,7 @@ open IniLib
 open Xunit
 
 [<Fact>]
-let ``tryGetComments returns all comments immediately preceding, and on the same line as a key`` () =
+let ``tryGetKeyComments returns all comments immediately preceding, and on the same line as a key`` () =
     let options = Options.defaultOptions
     let text = "[Section 1]\n\
                 # Comment 1\n\
@@ -13,14 +13,14 @@ let ``tryGetComments returns all comments immediately preceding, and on the same
     let comments =
         text
         |> Configuration.fromText options
-        |> Configuration.tryGetComments "Section 1" "foo"
+        |> Configuration.tryGetKeyComments "Section 1" "foo"
         |> Option.get
         |> List.map fst
 
     Assert.Equal<string>([ "Comment 1"; "Comment 2"; "Same line comment" ], comments)
 
 [<Fact>]
-let ``tryGetComments does not return preceding comments separated by an empty line`` () =
+let ``tryGetKeyComments does not return preceding comments separated by an empty line`` () =
     let options = Options.defaultOptions
     let text = "[Section 1]\n\
                 # Comment 1\n\
@@ -30,14 +30,14 @@ let ``tryGetComments does not return preceding comments separated by an empty li
     let comments =
         text
         |> Configuration.fromText options
-        |> Configuration.tryGetComments "Section 1" "foo"
+        |> Configuration.tryGetKeyComments "Section 1" "foo"
         |> Option.get
         |> List.map fst
 
     Assert.Equal<string>([ "Same line comment" ], comments)
 
 [<Fact>]
-let ``tryGetComments returns all comments on the same line as a multivalue key`` () =
+let ``tryGetKeyComments returns all comments on the same line as a multivalue key`` () =
     let options = Options.defaultOptions.WithDuplicateKeyRule DuplicateKeyAddsValue
     let text = "[Section 1]\n\
                 # Comment 1\n\
@@ -52,7 +52,7 @@ let ``tryGetComments returns all comments on the same line as a multivalue key``
     let comments =
         text
         |> Configuration.fromText options
-        |> Configuration.tryGetComments "Section 1" "foo"
+        |> Configuration.tryGetKeyComments "Section 1" "foo"
         |> Option.get
         |> List.map fst
 
@@ -69,7 +69,7 @@ let ``tryGetComments returns all comments on the same line as a multivalue key``
     Assert.Equal<string>(expected, comments)
 
 [<Fact>]
-let ``tryGetComments returns comments for keys across duplicate sections`` () =
+let ``tryGetKeyComments returns comments for keys across duplicate sections`` () =
     let options =
         Options.defaultOptions
         |> Options.withDuplicateKeyRule DuplicateKeyAddsValue
@@ -88,7 +88,7 @@ let ``tryGetComments returns comments for keys across duplicate sections`` () =
     let comments =
         text
         |> Configuration.fromText options
-        |> Configuration.tryGetComments "Section 1" "foo" 
+        |> Configuration.tryGetKeyComments "Section 1" "foo" 
         |> Option.get
         |> List.map fst
 
@@ -100,9 +100,9 @@ let ``changeComment changes the text of an existing comment`` () =
     let text = "[Section 1]\n\
                 son goku = 9001 # blah"
     let config = Configuration.fromText options text
-    let (Some [comment]) = Configuration.tryGetComments "Section 1" "son goku" config
+    let (Some [comment]) = Configuration.tryGetKeyComments "Section 1" "son goku" config
     let newConfig = Configuration.changeComment options "aka kakkarot" comment config
-    let (Some [newCommentText, _]) = Configuration.tryGetComments "Section 1" "son goku" newConfig
+    let (Some [newCommentText, _]) = Configuration.tryGetKeyComments "Section 1" "son goku" newConfig
     Assert.Equal("aka kakkarot", newCommentText)
 
 [<Fact>]
@@ -131,7 +131,7 @@ let ``Add a comment on the same line, inserting a space between the key and the 
     Assert.Equal(expected, actual)
 
 [<Fact>]
-let ``Add a comment on the same line, copying the pre-existing trailing newline`` () =
+let ``Adding a comment on the same line copyies the pre-existing trailing newline`` () =
     let options = Options.defaultOptions.WithNewlineRule LfNewline
     let text = "[Section 1]\n\
                 foo = bar\n\
@@ -145,6 +145,36 @@ let ``Add a comment on the same line, copying the pre-existing trailing newline`
                     \n\
                     beauty = truth"
     let actual = Configuration.toText options config
+    Assert.Equal(expected, actual)
+
+[<Fact>]
+let ``Adding a comment on the same line preserves leading whitespace`` () =
+    let options = Options.defaultOptions.WithNewlineRule LfNewline
+    let text = "[Section 1]\n\
+                foo = bar    \n\
+                bar = baz"
+    let config = Configuration.fromText options text
+    let fooKey = Configuration.getNode "Section 1" "foo" config
+    let config = Configuration.addComment OnSameLine options fooKey "blah" config
+    let expected = "[Section 1]\n\
+                    foo = bar    # blah\n\
+                    bar = baz"
+    let actual = Configuration.toText options config
+    Assert.Equal(expected, actual)
+
+[<Fact>]
+let ``Adding a key after comment does not insert any blank lines`` () =
+    let options = Options.defaultOptions.WithNewlineRule LfNewline
+    let text = "[Section 1]\n\
+                foo = bar # blah\n"
+    let config =
+        text
+        |> Configuration.fromText options
+        |> Configuration.add options "Section 1" "bar" "baz"
+    let actual = Configuration.toText options config
+    let expected = "[Section 1]\n\
+                    foo = bar # blah\n\
+                    bar = baz\n"
     Assert.Equal(expected, actual)
 
 [<Fact>]

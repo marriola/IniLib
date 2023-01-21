@@ -15,7 +15,7 @@ let addNewlineIfNeeded options node =
     if String.endsWith "\n" (Node.toText options node) then
         node
     else
-        Node.addChild (newlineTrivia options) node
+        Node.appendChild (newlineTrivia options) node
 
 let private escapes =
     Parser.escapeCodeToCharacter

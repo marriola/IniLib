@@ -48,8 +48,8 @@ with
     static member inline walkCata fChildren fToken defaultValue node =
         match node with
         | RootNode children
-        | SectionHeadingNode (_, children)
         | SectionNode (_, children)
+        | SectionHeadingNode (_, children)
         | KeyNode (_, _, children)
         | KeyNameNode (_, children)
         | KeyValueNode (_, children)
@@ -98,7 +98,7 @@ with
     static member endPosition node = Node.walkCata (List.last >> Node.endPosition) Token.endPosition (1, 1) node
 
     static member getChildren node = Node.walkCata id (fun _ -> []) [] node
-            
+
     static member hasChild predicate node = node |> Node.getChildren |> List.exists predicate
 
     static member startsWithChild predicate node = node |> Node.getChildren |> List.head |> predicate
@@ -136,18 +136,29 @@ with
         | _ -> node
 
     static member inline internal withChildren children node = Node.setChildren (fun _ -> children) node
-    static member inline internal addChildren children node = Node.setChildren (fun oldChildren -> oldChildren @ children) node
-    static member inline internal addChild child node = Node.addChildren [child] node
-    static member inline internal addChildrenToBeginning children node = Node.setChildren (List.append children) node
-    static member inline internal addChildToBeginning child node = Node.addChildrenToBeginning [child] node
+
+    static member inline internal appendChildren children node = Node.setChildren (fun oldChildren -> oldChildren @ children) node
+
+    static member inline internal appendChild child node = Node.appendChildren [child] node
+
+    static member inline internal prependChildren children node = Node.setChildren (List.append children) node
+
+    static member inline internal prependChild child node = Node.prependChildren [child] node
+
     static member inline internal insertChildrenAt i children node = Node.setChildren (List.insertManyAt i children) node
+
     static member inline internal insertChildAt i child node = Node.insertChildrenAt i [child] node
+
     static member inline internal removeChild child node = Node.setChildren (List.filter ((<>) child)) node
 
     static member inline internal isWhitespace node = match node with TriviaNode (Whitespace _) -> true | _ -> false
+
     static member inline internal isComment node = match node with CommentNode _ -> true | _ -> false
+
     static member inline internal isNotComment node = match node with CommentNode _ -> false | _ -> true
+
     static member inline internal isReplaceable node = match node with ReplaceableTokenNode _ -> true | _ -> false
+
     static member inline internal isNotReplaceable node = match node with ReplaceableTokenNode _ -> false | _ -> true
 
     static member internal splitLeadingWhitespace (filter: Node -> bool) (nodes: Node list) =
@@ -162,9 +173,15 @@ with
 
     static member internal joinReplaceableText options nodes =
         nodes
-        |> List.choose (function ReplaceableTokenNode (Comment _) | ReplaceableTokenNode (Text _) | ReplaceableTokenNode (Whitespace _) as n -> Some n | _ -> None)
-        |> List.map (Node.toText options)
+        |> List.choose (function
+            | ReplaceableTokenNode (Comment _)
+            | ReplaceableTokenNode (Text _)
+            | ReplaceableTokenNode (Whitespace _) as n ->
+                Some (Node.toText options n)
+            | _ ->
+                None)
         |> String.concat ""
+        |> String.trim
 
     /// <summary>
     /// Visits each node in a tree, rebuilding the tree and updating the line and column of each token
@@ -196,11 +213,13 @@ with
 
             | KeyNameNode (_, children) ->
                 let nextChildren, nextPosition = fNext stepInto nextPosition children
-                KeyNameNode (Node.joinReplaceableText options nextChildren, nextChildren), nextPosition
+                let keyName = Node.joinReplaceableText options nextChildren
+                KeyNameNode (keyName, nextChildren), nextPosition
 
             | KeyValueNode (_, children) ->
                 let nextChildren, nextPosition = fNext stepInto nextPosition children
-                KeyValueNode (Node.joinReplaceableText options nextChildren, nextChildren), nextPosition
+                let keyValue = Node.joinReplaceableText options nextChildren
+                KeyValueNode (keyValue, nextChildren), nextPosition
 
             | CommentNode (_, children) ->
                 let nextChildren, nextPosition = fNext stepInto nextPosition children

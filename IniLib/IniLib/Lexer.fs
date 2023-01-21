@@ -57,6 +57,14 @@ let lex options text =
         match output, text with
         | _, [] -> output
 
+        | Whitespace (ws, _, _)::_, c::rest when
+            Char.IsWhiteSpace(c)
+            && (List.isEmpty output
+                || c = '\r'
+                || c = '\n' && not (ws.EndsWith("\r"))) ->
+            let nextOutput = Whitespace (string c, line, column) :: output
+            lex' nextOutput nextLine nextColumn rest
+
         | Whitespace (ws, line, column)::restOutput, c::rest when Char.IsWhiteSpace(c) && not (ws.EndsWith("\n")) ->
             let whitespace = Whitespace (ws + string c, line, column)
             let nextOutput = whitespace :: restOutput
