@@ -171,6 +171,13 @@ with
         let nodes = nodes[0..nodes.Length - 1 - trailingWhitespace.Length]
         nodes, trailingWhitespace
 
+    static member copyLeadingWhitespace sourceNode targetNode =
+        let _, leadingWhitespace =
+            sourceNode
+            |> Node.getChildren
+            |> Node.splitLeadingWhitespace Operators.giveTrue
+        Node.prependChildren leadingWhitespace targetNode
+
     static member internal joinReplaceableText options nodes =
         nodes
         |> List.choose (function

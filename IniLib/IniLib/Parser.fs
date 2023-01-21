@@ -390,8 +390,15 @@ let parse (options: Options) tokens =
 
         // Comment
         | (CommentIndicator _)::_ ->
-            let (Some nextComment), tokens = tryParseComment tokens
-            parseKeys parsedKeys (nextComment :: outNodes) tokens
+            let (Some comment), tokens = tryParseComment tokens
+            let leadingWhitespace =
+                outNodes
+                |> List.takeWhile Node.isWhitespace
+                |> List.takeWhile (Node.endsWith options "\n" >> not)
+                |> List.rev
+            let comment = Node.prependChildren leadingWhitespace comment
+            let nextOutNodes = comment :: outNodes[leadingWhitespace.Length..]
+            parseKeys parsedKeys nextOutNodes tokens
 
         // Parse the next key with any consumed whitespace from the last line of the output added to it
         | _ ->

@@ -382,12 +382,12 @@ let add options sectionName keyName value config =
             |> Option.get
 
         // Insert a newline if the last key didn't end in a newline, and copy leading whitespace from last key
-        let nodeChildren = Node.getChildren previousNode
-        let _, leadingWhitespace = Node.splitLeadingWhitespace Operators.giveTrue nodeChildren
-        let _, trailingNewline = Node.splitTrailingWhitespace (Node.toText options >> String.endsWith "\n") nodeChildren
-
+        let _, trailingNewline =
+            previousNode
+            |> Node.getChildren
+            |> Node.splitTrailingWhitespace (Node.toText options >> String.endsWith "\n")
         let newline = if trailingNewline.Length > 0 then [] else [ NodeBuilder.newlineTrivia options ]
-        let outNodes = newline @ [ Node.prependChildren leadingWhitespace keyNode ]
+        let outNodes = newline @ [ Node.copyLeadingWhitespace previousNode keyNode ]
 
         let newSectionNode = Node.insertChildrenAt (insertIndex + 1) outNodes sectionNode
         let newTree = Node.replace ((=) sectionNode) options [sectionNode] [newSectionNode] tree
@@ -406,13 +406,31 @@ let add options sectionName keyName value config =
                     |> Option.defaultValue 0
                 List.insertManyAt nonCommentIndex [ sectionNode; newlineTrivia ] children
             else
+                // Copy leading whitespace from last section
+                let (Configuration (tree, _)) = config
+                let lastSectionChildren = 
+                    tree
+                    |> Node.getChildren
+                    |> List.tryFindBack (function SectionNode _ -> true | _ -> false)
+                    |> Option.map Node.getChildren
+                    |> Option.defaultValue []
+                let lastNodeChildren =
+                    lastSectionChildren
+                    |> List.tryFindIndexBack (function KeyNode _ -> true | _ -> false)
+                    |> Option.orElseWith (fun () -> List.tryFindIndexBack (function CommentNode _ | SectionHeadingNode _ -> true | _ -> false) lastSectionChildren)
+                    |> Option.map (fun i -> Node.getChildren lastSectionChildren[i])
+                    |> Option.defaultValue []
+                let _, lastNodeWhitespace = Node.splitLeadingWhitespace Operators.giveTrue lastNodeChildren
+                let newKeyNode = Node.prependChildren lastNodeWhitespace keyNode
+                let newSectionNode = Node.replace ((=) keyNode) options [keyNode] [newKeyNode] sectionNode
+
                 // Insert a newline if the last node doesn't end with a newline, and add the section at the end
                 let newline =
                     children
                     |> List.tryLast
                     |> Option.map (fun n -> if Node.endsWith options "\n" n then [] else [ newlineTrivia; newlineTrivia ])
                     |> Option.defaultValue []
-                children @ newline @ [ sectionNode ]
+                children @ newline @ [ newSectionNode ]
 
         let newTree = Node.renumber options (RootNode newChildren)
         Configuration (newTree, toMap options newTree)
@@ -463,10 +481,16 @@ let addComment commentPosition options targetNode text (Configuration (tree, _) 
             let nextChildren =
                 match commentPosition, targetNode with
                 | OnPreviousLine, _ ->
-                    let commentNode = Node.appendChild (NodeBuilder.newlineTrivia options) commentNode
+                    let commentNode =
+                        commentNode
+                        |> Node.copyLeadingWhitespace targetNode
+                        |> Node.appendChild (NodeBuilder.newlineTrivia options)
                     List.insertAt targetIndex commentNode children
                 | OnNextLine, _ ->
-                    let commentNode = Node.appendChild (NodeBuilder.newlineTrivia options) commentNode
+                    let commentNode =
+                        commentNode
+                        |> Node.copyLeadingWhitespace targetNode
+                        |> Node.appendChild (NodeBuilder.newlineTrivia options)
                     let nextIndex = min (targetIndex + 1) (List.length children)
                     let targetNodeWithNewline = NodeBuilder.addNewlineIfNeeded options targetNode
                     children

@@ -270,6 +270,58 @@ let ``Add a comment before a comment`` () =
     Assert.Equal(expected, actual)
 
 [<Fact>]
+let ``Adding a comment before a comment copies leading whitespace of target comment`` () =
+    let options = Options.defaultOptions
+    let text = """
+[Section 1]
+    beauty = truth
+
+    # Comment 1
+    # Comment 2
+    foo = bar
+"""
+    let config = Configuration.fromText options text
+    let comments = List.map snd (Configuration.getComments "Section 1" "foo" config)
+    let config = Configuration.addComment OnPreviousLine options (comments[0]) "Comment 0" config
+    let expected = """
+[Section 1]
+    beauty = truth
+
+    # Comment 0
+    # Comment 1
+    # Comment 2
+    foo = bar
+"""
+    let actual = Configuration.toText options config
+    Assert.Equal(expected, actual)
+
+[<Fact>]
+let ``Adding a comment after a comment copies leading whitespace of target comment`` () =
+    let options = Options.defaultOptions
+    let text = """
+[Section 1]
+    beauty = truth
+
+    # Comment 1
+    # Comment 2
+    foo = bar
+"""
+    let config = Configuration.fromText options text
+    let comments = List.map snd (Configuration.getComments "Section 1" "foo" config)
+    let config = Configuration.addComment OnNextLine options (comments[1]) "Comment 3" config
+    let expected = """
+[Section 1]
+    beauty = truth
+
+    # Comment 1
+    # Comment 2
+    # Comment 3
+    foo = bar
+"""
+    let actual = Configuration.toText options config
+    Assert.Equal(expected, actual)
+
+[<Fact>]
 let ``Add a comment before a key`` () =
     let options = Options.defaultOptions.WithNewlineRule LfNewline
     let text = "[Section 1]\n\

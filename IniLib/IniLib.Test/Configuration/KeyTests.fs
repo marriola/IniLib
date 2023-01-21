@@ -42,6 +42,56 @@ let ``Adding key to existing section copies indentation of last key`` () =
     Assert.Equal(expected, actual)
 
 [<Fact>]
+let ``Adding key to new section copies indentation of last key`` () =
+    let options = Options.defaultOptions
+    let text = """
+[Section 1]
+    foo = bar
+
+"""
+    let config =
+        text
+        |> Configuration.fromText options
+        |> Configuration.add options "Section 2" "baz" "quux"
+
+    let actual = Configuration.toText options config
+    let expected = """
+[Section 1]
+    foo = bar
+
+[Section 2]
+    baz = quux
+
+"""
+
+    Assert.Equal(expected, actual)
+
+[<Fact>]
+let ``Adding key to new section copies indentation of last comment when no key is present`` () =
+    let options = Options.defaultOptions
+    let text = """
+[Section 1]
+    # foo = bar
+
+"""
+    let config =
+        text
+        |> Configuration.fromText options
+        |> Configuration.add options "Section 2" "baz" "quux"
+
+    let actual = Configuration.toText options config
+    let expected = """
+[Section 1]
+    # foo = bar
+
+[Section 2]
+    baz = quux
+
+"""
+
+    Assert.Equal(expected, actual)
+
+[<Fact>]
 let ``Adding key to section that does not end in newline inserts a newline after the last key`` () =
     let options = Options.defaultOptions.WithNewlineRule LfNewline
     let text = "[Section 1]\n\
