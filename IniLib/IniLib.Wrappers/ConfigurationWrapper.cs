@@ -12,6 +12,21 @@ namespace IniLib.Wrappers
         private Options _options;
         private Configuration.Configuration _state;
 
+        /// <summary>
+        /// Gets a section.
+        /// </summary>
+        /// <param name="section">The section name.</param>
+        /// <returns>The last inserted value of the key</returns>
+        public KeyMapWrapper this[string section]
+        {
+            get => new KeyMapWrapper(_options, _state, section, Configuration.tryGetSection(section, _state)?.Value.Item1, ReplaceState);
+        }
+
+        /// <summary>
+        /// Gets the section keys in the configuration.
+        /// </summary>
+        public IEnumerable<string> Sections => Configuration.sections(_state);
+
         private ConfigurationWrapper() { }
 
         /// <summary>
@@ -34,7 +49,6 @@ namespace IniLib.Wrappers
             : this(options, configuration)
         { }
 
-
         /// <summary>
         /// Instantiates a new configuration from a list of tuples.
         /// </summary>
@@ -52,25 +66,6 @@ namespace IniLib.Wrappers
         public ConfigurationWrapper(IEnumerable<Tuple<string, string, string>> values, Options options = null)
             : this(options, Configuration.ofSeq(options ?? Options.defaultOptions, ListModule.OfSeq(values)))
         { }
-
-        /// <summary>
-        /// Gets a section.
-        /// </summary>
-        /// <param name="section">The section name.</param>
-        /// <returns>The last inserted value of the key</returns>
-        public KeyMapWrapper this[string section]
-        {
-            get => new KeyMapWrapper(_options, _state, section, Configuration.tryGetSection(section, _state)?.Value.Item1, this.ReplaceState);
-        }
-
-        /// <summary>
-        /// Removes a section from the configuration.
-        /// </summary>
-        /// <param name="sectionName">The name of the section to remove.</param>
-        public void RemoveSection(string sectionName)
-        {
-            _state = Configuration.removeSection(_options, sectionName, _state);
-        }
 
         /// <summary>
         /// Reads a configuration file from a string.
@@ -133,11 +128,20 @@ namespace IniLib.Wrappers
         }
 
         /// <summary>
-        /// Gets the section and its node in the syntax tree.
+        /// Removes a section from the configuration.
+        /// </summary>
+        /// <param name="sectionName">The name of the section to remove.</param>
+        public void RemoveSection(string sectionName)
+        {
+            _state = Configuration.removeSection(_options, sectionName, _state);
+        }
+
+        /// <summary>
+        /// Gets the section's maps and its nodes in the syntax tree.
         /// </summary>
         /// <param name="sectionName">The name of the section to get.</param>
-        /// <returns>A tuple of <see cref="IniLib.Wrapppers.KeyMapWrapper"/> and <see cref="IniLib.Node"/>.</returns>
-        public Tuple<KeyMapWrapper, List<Node>> TryGetSectionNode (string sectionName)
+        /// <returns>A tuple of <see cref="IniLib.Wrapppers.KeyMapWrapper"/> and <see cref="NodeWrapper"/> list.</returns>
+        public Tuple<KeyMapWrapper, List<NodeWrapper>> TryGetSections(string sectionName)
         {
             var result = Configuration.tryGetSection(sectionName, _state);
             if (result == null)
@@ -146,20 +150,28 @@ namespace IniLib.Wrappers
             }
             else
             {
-                var keyMap = new KeyMapWrapper(_options, _state, sectionName, result.Value.Item1, this.ReplaceState);
-                return Tuple.Create(keyMap, result.Value.Item2.ToList());
+                var keyMap = new KeyMapWrapper(_options, _state, sectionName, result.Value.Item1, ReplaceState);
+                var nodes = result.Value.Item2.Select(n => new NodeWrapper(n, _options, _state, ReplaceState)).ToList();
+                return Tuple.Create(keyMap, nodes);
             }
         }
 
-        public ICollection<string> GetSections() => _state.Item2.Item.Keys;
-
         /// <summary>
-        /// Converts the configuration back to the original format.
+        /// Gets the section's nodes in the syntax tree.
         /// </summary>
-        /// <returns>Configuration file content in a string.</returns>
-        public override string ToString()
+        /// <param name="sectionName">The name of the section to get.</param>
+        /// <returns>A tuple of <see cref="IniLib.Wrapppers.KeyMapWrapper"/> and <see cref="NodeWrapper"/> list.</returns>
+        public List<NodeWrapper> TryGetSectionNodes(string sectionName)
         {
-            return Configuration.toText(_options, _state);
+            var result = Configuration.tryGetSection(sectionName, _state);
+            if (result == null)
+            {
+                return null;
+            }
+            else
+            {
+                return result.Value.Item2.Select(n => new NodeWrapper(n, _options, _state, ReplaceState)).ToList();
+            }
         }
 
         /// <summary>
@@ -193,6 +205,15 @@ namespace IniLib.Wrappers
         private void ReplaceState(Configuration.Configuration newState)
         {
             _state = newState;
+        }
+
+        /// <summary>
+        /// Converts the configuration back to the original format.
+        /// </summary>
+        /// <returns>Configuration file content in a string.</returns>
+        public override string ToString()
+        {
+            return Configuration.toText(_options, _state);
         }
     }
 }
