@@ -311,8 +311,7 @@ let parse (options: Options) tokens =
         let trailingWhitespace, keyValue, keyValueNode, tokens = parseKeyValue (ParseKeyPartState.defaultFor tokens)
 
         let endsWithNewline =
-            keyValueNode
-            |> Node.getChildren
+            trailingWhitespace
             |> List.tryLast
             |> Option.map (Node.endsWith options "\n")
             |> Option.defaultValue false

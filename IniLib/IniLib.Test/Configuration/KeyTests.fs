@@ -236,6 +236,24 @@ let ``Deleting key with comment on same line also removes the comment`` () =
     Assert.Equal(expected, Configuration.toText options config)
 
 [<Fact>]
+let ``Deleting key with comment on the next line preserves the comment`` () =
+    let options = Options.defaultOptions.WithNewlineRule LfNewline
+    let text = "[Section 1]\n\
+                aaa = 1\n\
+                foo = bar\n\
+                ; Comment\n\
+                bbb = 2"
+    let config =
+        text
+        |> Configuration.fromText options
+        |> Configuration.removeKey options "Section 1" "foo"
+    let expected = "[Section 1]\n\
+                    aaa = 1\n\
+                    ; Comment\n\
+                    bbb = 2"
+    Assert.Equal(expected, Configuration.toText options config)
+
+[<Fact>]
 let ``Deleting a key removes it from the map`` () =
     let section, key, value = "foo", "bar", "baz"
     let config =
