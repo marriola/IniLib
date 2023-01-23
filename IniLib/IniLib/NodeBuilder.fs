@@ -8,7 +8,6 @@ let private RE_ESCAPE_CHARACTERS = new Regex(@"[\b\f\n\r\t\v""'\\#: ]")
 
 let inline newlineTrivia options = TriviaNode (Whitespace (options.newlineRule.toText(), 0, 0))
 let inline spaceTrivia () = TriviaNode (Whitespace (" ", 0, 0))
-let inline whitespaceTrivia space = TriviaNode (Whitespace (space, 0, 0))
 let inline replaceableText text = ReplaceableTokenNode (Text (text, 0, 0))
 
 let addNewlineIfNeeded options node =
@@ -23,9 +22,11 @@ let private escapes =
     |> List.map (fun kvp -> kvp.Key, kvp.Value)
     |> List.except [('s', ' ')]
 
-let private escape s =
-    (s, escapes)
-    ||> List.fold (fun s (escapeCode, escapedChar) -> String.replace (string escapedChar) ("\\" + string escapeCode) s)
+let private escape text =
+    List.fold
+        (fun text (escapeCode, escapedChar) -> String.replace (string escapedChar) $"\\{escapeCode}" text)
+        text
+        escapes
 
 let private escapeNode constructor node text children =
     match text with
@@ -79,7 +80,7 @@ let sanitize options node =
 let keyName options name =
     let whitespace =
         match options.nameValueDelimiterSpacingRule with
-        | LeftOnly | BothSides -> [ whitespaceTrivia " " ]
+        | LeftOnly | BothSides -> [ spaceTrivia() ]
         | _ -> []
 
     KeyNameNode (name, replaceableText name :: whitespace)
@@ -88,7 +89,7 @@ let keyName options name =
 let keyValue options value =
     let whitespace =
         match options.nameValueDelimiterSpacingRule with
-        | RightOnly | BothSides -> [ whitespaceTrivia " "]
+        | RightOnly | BothSides -> [ spaceTrivia()]
         | _ -> []
     let children = [
         whitespace

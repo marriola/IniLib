@@ -414,14 +414,11 @@ let add options sectionName keyName value config =
                     |> List.tryFindBack (function SectionNode _ -> true | _ -> false)
                     |> Option.map Node.getChildren
                     |> Option.defaultValue []
-                let lastNodeChildren =
+                let newKeyNode =
                     lastSectionChildren
-                    |> List.tryFindIndexBack (function KeyNode _ -> true | _ -> false)
-                    |> Option.orElseWith (fun () -> List.tryFindIndexBack (function CommentNode _ | SectionHeadingNode _ -> true | _ -> false) lastSectionChildren)
-                    |> Option.map (fun i -> Node.getChildren lastSectionChildren[i])
-                    |> Option.defaultValue []
-                let _, lastNodeWhitespace = Node.splitLeadingWhitespace Operators.giveTrue lastNodeChildren
-                let newKeyNode = Node.prependChildren lastNodeWhitespace keyNode
+                    |> List.tryFindBack (function KeyNode _ | CommentNode _ | SectionHeadingNode _ -> true | _ -> false)
+                    |> Option.map (fun previousNode -> Node.copyLeadingWhitespace previousNode keyNode)
+                    |> Option.defaultValue keyNode
                 let newSectionNode = Node.replace ((=) keyNode) options [keyNode] [newKeyNode] sectionNode
 
                 // Insert a newline if the last node doesn't end with a newline, and add the section at the end
@@ -660,7 +657,7 @@ let private convertNameValueDelimiters options (RootNode children) =
                 let keyNameNode =
                     let leftWhitespace =
                         match options.nameValueDelimiterSpacingRule with
-                        | BothSides | LeftOnly -> [ NodeBuilder.whitespaceTrivia " " ]
+                        | BothSides | LeftOnly -> [ NodeBuilder.spaceTrivia() ]
                         | _ -> []
                     let keyNameNodeStripped, _ = Node.splitTrailingWhitespace Operators.giveTrue keyNameChildren
                     let node = KeyNameNode (name, keyNameNodeStripped @ leftWhitespace)
@@ -672,7 +669,7 @@ let private convertNameValueDelimiters options (RootNode children) =
                 let keyValueNode =
                     let rightWhitespace =
                         match options.nameValueDelimiterSpacingRule with
-                        | BothSides | RightOnly -> [ NodeBuilder.whitespaceTrivia " " ]
+                        | BothSides | RightOnly -> [ NodeBuilder.spaceTrivia() ]
                         | _ -> []
                     let keyValueNodeStripped, _ = Node.splitLeadingWhitespace Operators.giveTrue keyValueChildren
                     KeyValueNode (value, rightWhitespace @ keyValueNodeStripped)
