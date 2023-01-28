@@ -60,11 +60,9 @@ module Token =
 
     let charToEscaped =
         escapeCharacters
-        //|> Map.toList
         |> List.map (fun (escape, c) -> c, string escape)
-        //|> Map.ofList
 
-    let (*inline*) private escapeCata fChooseValues map options text =
+    let inline private escapeCata fChooseValues map options text =
         let rec escape' escapeChars text =
             match escapeChars with
             | [] -> text
@@ -75,7 +73,7 @@ module Token =
 
         match options.escapeSequenceRule with
         | IgnoreEscapeSequences -> text
-        | _ -> escape' map (*(Map.toList map)*) text
+        | _ -> escape' map text
 
     let escape options text = escapeCata (fun (unescaped, escapeChar) -> (unescaped, "\\" + escapeChar)) charToEscaped options text 
     let unescape options = escapeCata (fun (escapeChar, unescaped) -> unescaped, escapeChar) escapeCharacters options
@@ -101,6 +99,17 @@ module Token =
                 match options.escapeSequenceRule with
                 | IgnoreEscapeSequences -> codepoint |> char |> string
                 | _ -> $"\x%04x{codepoint}"
+
+    let toTextToken token =
+        match token with
+        | LeftBracket (line, column) -> Text ("[", line, column)
+        | RightBracket (line, column) -> Text ("]", line, column)
+        | Assignment (c, line, column) -> Text (string c, line, column)
+
+    let endsWith options substring token =
+        token
+        |> toText options
+        |> String.endsWith substring
 
     let withPosition (line, column) token =
         match token with

@@ -19,6 +19,7 @@ module EscapeSequenceRuleTests =
         '"', '"'
         '#', '#'
         ':', ':'
+        ';', ';'
         ' ', ' '
         's', ' '
     ]
