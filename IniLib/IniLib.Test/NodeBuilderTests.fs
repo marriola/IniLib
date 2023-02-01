@@ -74,3 +74,28 @@ let ``sanitize escapes text with escape characters with escape sequence rule Use
             failwith $"Expected [...; ReplaceableTextNode (Text _); ...], got %O{sanitizedKeyNameChildren}"
 
     Assert.Equal(expectedText, actualText)
+
+[<Fact>]
+let ``sanitize escapes parsed node with escape characters with escape sequence rule UseEscapeSequences`` () =
+    let readOptions = Options.defaultOptions
+    let writeOptions =
+        Options.defaultOptions
+        |> Options.withEscapeSequenceRule UseEscapeSequences
+        |> Options.withNameValueDelimiterRule NoDelimiter
+        |> Options.withNewlineRule LfNewline
+    let text = "[Saiyans]\n\
+                nappa = 4000\n\
+                prince vegeta = 18000\n\
+                \n\
+                [Namekians]\n\
+                piccolo = 3500"
+    let config = Configuration.fromText readOptions text
+    let expectedText = "[Saiyans]\n\
+                        nappa 4000\n\
+                        prince\\ vegeta 18000\n\
+                        \n\
+                        [Namekians]\n\
+                        piccolo 3500"
+    let actualText = Configuration.toText writeOptions config
+
+    Assert.Equal(expectedText, actualText)

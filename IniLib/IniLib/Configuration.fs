@@ -640,8 +640,8 @@ let fromFile options path =
 
 #endif
 
-/// Converts all assignment tokens and the surrounding spacing if they disagree with the applied name value delimiter preference and spacing rules
-let private convertNameValueDelimiters options (RootNode children) =
+/// Reformats all keys in a tree.
+let private reformatKeys options (RootNode children) =
     let convertSection (SectionNode (name, sectionChildren)) =
         let convertKey name value maybeAssignmentChar keyNode (KeyNameNode (_, keyNameChildren)) (KeyValueNode (_, keyValueChildren)) rest =
             let preferredAssignmentChar =
@@ -652,7 +652,16 @@ let private convertNameValueDelimiters options (RootNode children) =
 
             if preferredAssignmentChar = maybeAssignmentChar
                 || options.nameValueDelimiterRule = EqualsOrColonDelimiter && maybeAssignmentChar <> None then
-                keyNode
+                let newKeyChildren =
+                    keyNode
+                    |> Node.getChildren
+                    |> List.map (function
+                        | KeyNameNode _
+                        | KeyValueNode _ as node ->
+                            NodeBuilder.sanitize options node
+                        | node ->
+                            node)
+                Node.withChildren newKeyChildren keyNode
             else
                 let keyNameNode =
                     let leftWhitespace =
@@ -672,7 +681,8 @@ let private convertNameValueDelimiters options (RootNode children) =
                         | BothSides | RightOnly -> [ NodeBuilder.spaceTrivia() ]
                         | _ -> []
                     let keyValueNodeStripped, _ = Node.splitLeadingWhitespace Operators.giveTrue keyValueChildren
-                    KeyValueNode (value, rightWhitespace @ keyValueNodeStripped)
+                    let node = KeyValueNode (value, rightWhitespace @ keyValueNodeStripped)
+                    NodeBuilder.sanitize options node
                 KeyNode (name, value, [ keyNameNode ] @ assignmentNode @ [ keyValueNode ] @ rest)
                 
         let newSectionChildren =
@@ -697,7 +707,7 @@ let private convertNameValueDelimiters options (RootNode children) =
 
 /// Converts the configuration to text.
 let toText options (Configuration (tree, _)) =
-    let newTree = convertNameValueDelimiters options tree
+    let newTree = reformatKeys options tree
     Node.toText options newTree
 
 #if !FABLE_COMPILER

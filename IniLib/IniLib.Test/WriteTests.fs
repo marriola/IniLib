@@ -116,3 +116,21 @@ x=3
     let expected = text.Replace("?", "never gonna give you up")
     let actual = Configuration.toText options config
     Assert.Equal(expected, actual)
+
+[<Fact>]
+let ``Key values are always quoted when writing with AlwaysUseQuotation`` () =
+    let readOptions = Options.defaultOptions
+    let writeOptions =
+        Options.defaultOptions
+        |> Options.withNewlineRule LfNewline
+        |> Options.withQuotationRule AlwaysUseQuotation
+    let text = "[Section 1]\n\
+                foo = a b c\n\
+                bar = 123"
+    let config = Configuration.fromText readOptions text
+    let actualText = Configuration.toText writeOptions config
+    let expectedText = "[Section 1]\n\
+                        foo = \"a b c\"\n\
+                        bar = \"123\""
+
+    Assert.Equal(expectedText, actualText)

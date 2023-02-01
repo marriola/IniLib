@@ -4,7 +4,9 @@ open System.Text.RegularExpressions
 open IniLib.Utilities
 
 let private RE_WHITESPACE = new Regex("\\s")
-let private RE_ESCAPE_CHARACTERS = new Regex(@"[\b\f\n\r\t\v""'\\#: ]")
+let private RE_ESCAPE_CHARACTERS = new Regex(@"[\b\f\n\r\t\v]" +                // Control characters
+                                             @"|(?<!\\)[x""'#:;= ]" +           // Unescaped special characters
+                                             @"|\\(?![\b\f\n\r\t\vx""'#:;= ])") // Unescaped slash
 
 let inline newlineTrivia options = TriviaNode (Whitespace (options.newlineRule.toText(), 0, 0))
 let inline spaceTrivia () = TriviaNode (Whitespace (" ", 0, 0))
@@ -39,11 +41,9 @@ let private escapeNode constructor node text children =
         node
 
 let private quoteNode constructor node text children =
-    match children with
-    | ReplaceableTokenNode (Quote _) :: _ :: ReplaceableTokenNode (Quote _) :: _ ->
+    if List.exists (function ReplaceableTokenNode (Quote _) -> true | _ -> false) children then
         node
-
-    | _ ->
+    else
         let prologue = children |> List.takeWhile Node.isNotReplaceable
         let nameText = children |> List.filter Node.isReplaceable
         let epilogue = children |> List.rev |> List.takeWhile Node.isNotReplaceable |> List.rev
@@ -61,21 +61,16 @@ let sanitize options node =
         | _ -> failwith $"Expected KeyNameNode or KeyValueNode, got %O{node}"
 
     let hasWhitespace = RE_WHITESPACE.IsMatch(text)
-    
-    match node with
-        match options.quotationRule, node with
-        | AlwaysUseQuotation, KeyValueNode _ ->
-            quoteNode constructor node text children
-        | AlwaysUseQuotation, _ | UseQuotation, _ when hasWhitespace ->
-            quoteNode constructor node text children
-        | _ ->
-            node
 
-    match options.escapeSequenceRule with
-    | UseEscapeSequencesAndLineContinuation | UseEscapeSequences when hasWhitespace ->
-        escapeNode constructor maybeQuotedNode text children
+    match node with
+    | KeyValueNode _ when options.quotationRule = AlwaysUseQuotation ->
+        quoteNode constructor node text children
+    | _ when options.quotationRule >= UseQuotation && hasWhitespace ->
+        quoteNode constructor node text children
+    | _ when options.escapeSequenceRule >= UseEscapeSequences && hasWhitespace ->
+        escapeNode constructor node text children
     | _ ->
-        maybeQuotedNode
+        node
 
 let keyName options name =
     let whitespace =
