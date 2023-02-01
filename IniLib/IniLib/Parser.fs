@@ -10,6 +10,7 @@ let internal escapeCodeToCharacter = dict [
     '#', '#'
     ':', ':'
     ';', ';'
+    '=', '='
     ' ', ' '
     's', ' '
     '0', char 0
@@ -136,6 +137,8 @@ let parse (options: Options) tokens =
         let (|EscapedText|_|) token =
             match token with
             | EscapedChar (c, line, column) ->
+                if not (escapeCodeToCharacter.ContainsKey c) then
+                    failwith $"Invalid escape sequence \\{c} at {line}, {column}"
                 Some (string escapeCodeToCharacter[c], line, column)
             | EscapedUnicodeChar (codepoint, line, column) ->
                 Some (codepoint |> char |> string, line, column)
@@ -176,10 +179,17 @@ let parse (options: Options) tokens =
             | (Some _), (Whitespace _ as whitespaceToken)::_ when Token.endsWith options "\n" whitespaceToken ->
                 failwith $"Expected text or {expectedAfterName}, got end of line at {Token.position whitespaceToken}"
 
+            // Append escaped text to the already read name
+            | (Some name), (EscapedText (text, _, _) as textToken)::rest ->
+                let name = if state.isQuoted then name else name + text
+                parseKeyName { state with
+                                    input = rest
+                                    text = Some name
+                                    consumedTokens = TokenNode textToken :: state.consumedTokens }
+
             // Append whitespace and text to the already read name
             | (Some name), (Text (text, _, _) as textToken)::rest
-            | (Some name), (Whitespace (text, _, _) as textToken)::rest
-            | (Some name), (EscapedText (text, _, _) as textToken)::rest when not (text.EndsWith "\n") ->
+            | (Some name), (Whitespace (text, _, _) as textToken)::rest ->
                 let name = if state.isQuoted then name else name + text
                 parseKeyName { state with
                                     input = rest
