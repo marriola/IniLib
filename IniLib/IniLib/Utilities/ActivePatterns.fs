@@ -6,7 +6,7 @@ open System.Text.RegularExpressions
 let (|RegexMatch|_|) (pattern: Regex) (text: string) =
     let m = pattern.Match text
     if m.Success then
-        Some m.Groups[1]
+        Some m.Groups[0]
     else
         None
 

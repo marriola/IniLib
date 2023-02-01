@@ -62,7 +62,7 @@ let sanitize options node =
 
     let hasWhitespace = RE_WHITESPACE.IsMatch(text)
     
-    let maybeQuotedNode =
+    match node with
         match options.quotationRule, node with
         | AlwaysUseQuotation, KeyValueNode _ ->
             quoteNode constructor node text children
