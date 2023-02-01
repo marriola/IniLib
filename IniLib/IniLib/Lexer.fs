@@ -100,7 +100,7 @@ let lex options text =
 
         | _, '\\'::c::rest when options.escapeSequenceRule <> IgnoreEscapeSequences ->
             let escapeToken = EscapedChar (c, line, column)
-            lex' (escapeToken :: output) nextLine nextColumn rest
+            lex' (escapeToken :: output) nextLine (nextColumn + 1) rest
 
         | _, '['::rest ->
             let nextToken = LeftBracket (line, column)
