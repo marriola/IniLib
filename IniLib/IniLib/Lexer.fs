@@ -2,6 +2,8 @@
 
 open System
 
+let private HEX_DIGITS = Set.ofList ([ '0' .. '9' ] @ [ 'a' .. 'f'] @ [ 'A' .. 'F' ])
+
 let lex options text =
     let assignmentIndicators =
         match options.nameValueDelimiterRule with
@@ -16,112 +18,121 @@ let lex options text =
         | HashComments -> set "#"
         | HashAndSemicolonComments -> set "#;"
 
-    let readLine firstLine firstColumn text =
-        let rec readLine' outputText column text =
-            let nextColumn = column + 1
+    let readLine startPosition text =
+        let rec readLine' outputText position text =
+            let nextPosition = Position.incrementColumn position
             match text with
             // Break on newline to force it to be its own token
             | '\r'::_
             | '\n'::_
             | [] ->
-                text, firstLine, nextColumn, Comment (new String(outputText |> List.rev |> Array.ofList), firstLine, firstColumn + 1)
+                let position = Position.incrementColumn startPosition
+                text, nextPosition, Comment (new String(outputText |> List.rev |> Array.ofList), position)
             | c::rest ->
-                readLine' (c :: outputText) nextColumn rest
+                readLine' (c :: outputText) nextPosition rest
 
-        readLine' [] firstColumn text
+        readLine' [] startPosition text
 
-    let readNumbers firstLine firstColumn text =
-        let hexDigits = Set.ofList ([ '0' .. '9' ] @ [ 'a' .. 'f'] @ [ 'A' .. 'F' ])
-        let rec readNumbers' outputText line column text =
-            let nextLine, nextColumn =
+    let readNumbers startPosition text =
+        let rec readNumbers' outputText position text =
+            let nextPosition =
                 match text with
-                | '\n'::_ ->
-                    line + 1, 1
-                | _ ->
-                    line, column + 1
+                | '\n'::_ -> Position.incrementLine position
+                | _ -> Position.incrementColumn position
             match text with
-            | c::rest when List.length outputText < 4 && hexDigits.Contains(c) ->
-                readNumbers' (c :: outputText) nextLine nextColumn rest
+            | c::rest when List.length outputText < 4 && HEX_DIGITS.Contains(c) ->
+                readNumbers' (c :: outputText) nextPosition rest
             | _ ->
-                new String(outputText |> List.rev |> Array.ofList), nextLine, nextColumn, text
-        readNumbers' [] firstLine firstColumn text
+                new String(outputText |> List.rev |> Array.ofList), nextPosition, text
+        readNumbers' [] startPosition text
 
-    let rec lex' output line column text =
-        let nextLine, nextColumn =
+    let rec lex' output position text =
+        let nextPosition =
             match text with
-            | '\n'::_ ->
-                line + 1, 1
-            | _ ->
-                line, column + 1
+            | '\n'::_ -> Position.incrementLine position
+            | _ -> Position.incrementColumn position
 
         match output, text with
         | _, [] -> output
 
-        | Whitespace (ws, _, _)::_, c::rest when
+        | Whitespace (ws, _)::_,
+          c::rest
+          when
             Char.IsWhiteSpace(c)
             && (List.isEmpty output
                 || c = '\r'
-                || c = '\n' && not (ws.EndsWith("\r"))) ->
-            let nextOutput = Whitespace (string c, line, column) :: output
-            lex' nextOutput nextLine nextColumn rest
+                || c = '\n' && not (ws.EndsWith "\r")) ->
+            let nextOutput = Whitespace (string c, position) :: output
+            lex' nextOutput nextPosition rest
 
-        | Whitespace (ws, line, column)::restOutput, c::rest when Char.IsWhiteSpace(c) && not (ws.EndsWith("\n")) ->
-            let whitespace = Whitespace (ws + string c, line, column)
+        | Whitespace (ws, lastPosition)::restOutput,
+          c::rest
+          when Char.IsWhiteSpace(c) && not (ws.EndsWith "\n") ->
+            let whitespace = Whitespace (ws + string c, lastPosition)
             let nextOutput = whitespace :: restOutput
-            lex' nextOutput nextLine nextColumn rest
+            lex' nextOutput nextPosition rest
 
-        | _, c::rest when Char.IsWhiteSpace(c) ->
-            let nextOutput = Whitespace (string c, line, column) :: output
-            lex' nextOutput nextLine nextColumn rest
+        | _, c::rest
+          when Char.IsWhiteSpace(c) ->
+            let nextOutput = Whitespace (string c, position) :: output
+            lex' nextOutput nextPosition rest
 
-        | _, c::rest when Set.contains c assignmentIndicators ->
-            let nextToken = Assignment (c, line, column)
-            lex' (nextToken :: output) nextLine nextColumn rest
+        | _, c::rest
+          when Set.contains c assignmentIndicators ->
+            let nextToken = Assignment (c, position)
+            lex' (nextToken :: output) nextPosition rest
 
-        | _, c::rest when Set.contains c commentIndicators ->
-            let hashToken = CommentIndicator (c, line, column)
-            let rest, nextLine, nextColumn, commentToken = readLine line column rest
-            lex' (commentToken :: hashToken :: output) nextLine nextColumn rest
+        | _, c::rest
+          when Set.contains c commentIndicators ->
+            let hashToken = CommentIndicator (c, position)
+            let rest, nextPosition, commentToken = readLine position rest
+            lex' (commentToken :: hashToken :: output) nextPosition rest
 
-        | _, '"'::rest when options.quotationRule <> IgnoreQuotation ->
-            let quoteToken = Quote (line, column)
-            lex' (quoteToken :: output) nextLine nextColumn rest
+        | _, '"'::rest
+          when options.quotationRule <> IgnoreQuotation ->
+            let quoteToken = Quote position
+            lex' (quoteToken :: output) nextPosition rest
 
         | _, '\\'::'\n'::rest
-        | _, '\\'::'\r'::'\n'::rest when options.escapeSequenceRule = UseEscapeSequencesAndLineContinuation ->
-            let lineContinuationToken = LineContinuation (line, column)
-            lex' (lineContinuationToken :: output) nextLine nextColumn rest
+        | _, '\\'::'\r'::'\n'::rest
+          when options.escapeSequenceRule = UseEscapeSequencesAndLineContinuation ->
+            let lineContinuationToken = LineContinuation position
+            lex' (lineContinuationToken :: output) nextPosition rest
 
-        | _, '\\'::'x'::rest when options.escapeSequenceRule <> IgnoreEscapeSequences ->
-            let number, nextLine, nextColumn, rest = readNumbers line column rest
-            let escapeToken = EscapedUnicodeChar (Int32.Parse(number, System.Globalization.NumberStyles.HexNumber), line, column)
-            let nextLine, nextColumn = Token.endPosition escapeToken
-            lex' (escapeToken :: output) nextLine nextColumn rest
+        | _, '\\'::'x'::rest
+          when options.escapeSequenceRule <> IgnoreEscapeSequences ->
+            let number, nextPosition, rest = readNumbers position rest
+            let codepoint = Int32.Parse(number, System.Globalization.NumberStyles.HexNumber)
+            let escapeToken = EscapedUnicodeChar (codepoint, position)
+            lex' (escapeToken :: output) nextPosition rest
 
-        | _, '\\'::c::rest when options.escapeSequenceRule <> IgnoreEscapeSequences ->
-            let escapeToken = EscapedChar (c, line, column)
-            lex' (escapeToken :: output) nextLine (nextColumn + 1) rest
+        | _, '\\'::c::rest
+          when options.escapeSequenceRule <> IgnoreEscapeSequences ->
+            let escapeToken = EscapedChar (c, position)
+            let nextPosition = Position.incrementColumn nextPosition
+            lex' (escapeToken :: output) nextPosition rest
 
         | _, '['::rest ->
-            let nextToken = LeftBracket (line, column)
-            lex' (nextToken :: output) nextLine nextColumn rest
+            let nextToken = LeftBracket position
+            lex' (nextToken :: output) nextPosition rest
 
         | _, ']'::rest ->
-            let nextToken = RightBracket (line, column)
-            lex' (nextToken :: output) nextLine nextColumn rest
+            let nextToken = RightBracket position
+            lex' (nextToken :: output) nextPosition rest
 
-        | Text (t, line, column)::restOutput, c::rest ->
+        | Text (t, lastPosition)::restOutput,
+          c::rest ->
             let text = (t + string c)
-            let nextToken = Text (text, line, column)
+            let nextToken = Text (text, lastPosition)
             let nextOutput = nextToken :: restOutput
-            lex' nextOutput nextLine nextColumn rest
+            lex' nextOutput nextPosition rest
 
         | _, c::rest ->
-            let nextToken = Text (string c, line, column)
+            let nextToken = Text (string c, position)
             let nextOutput = nextToken :: output
-            lex' nextOutput nextLine nextColumn rest
+            lex' nextOutput nextPosition rest
 
     text
     |> List.ofSeq
-    |> lex' [] 1 1
+    |> lex' [] Position.Start
     |> List.rev

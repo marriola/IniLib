@@ -46,8 +46,8 @@ let ``sanitize does not escape text of node twice with escape sequence rule UseE
     let expectedText = "one\\ word"
     let actualText =
         match sanitizedKeyNameChildren with
-        | ReplaceableTokenNode (Text (text, _, _)) :: _
-        | _ :: ReplaceableTokenNode (Text (text, _, _)) :: _ ->
+        | ReplaceableTokenNode (Text (text, _)) :: _
+        | _ :: ReplaceableTokenNode (Text (text, _)) :: _ ->
             text
         | _ ->
             failwith $"Expected [...; ReplaceableTextNode (Text _); ...], got %O{sanitizedKeyNameChildren}"
@@ -67,8 +67,8 @@ let ``sanitize escapes text with escape characters with escape sequence rule Use
     let expectedText = "one\\ word"
     let actualText =
         match sanitizedKeyNameChildren with
-        | ReplaceableTokenNode (Text (text, _, _)) :: _
-        | _ :: ReplaceableTokenNode (Text (text, _, _)) :: _ ->
+        | ReplaceableTokenNode (Text (text, _)) :: _
+        | _ :: ReplaceableTokenNode (Text (text, _)) :: _ ->
             text
         | _ ->
             failwith $"Expected [...; ReplaceableTextNode (Text _); ...], got %O{sanitizedKeyNameChildren}"

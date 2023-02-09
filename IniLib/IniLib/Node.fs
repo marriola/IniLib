@@ -93,9 +93,9 @@ with
 
     static member endsWith options substring = Node.toText options >> String.endsWith substring
 
-    static member position node = Node.walkCata (List.head >> Node.position) Token.position (1, 1) node
+    static member position node = Node.walkCata (List.head >> Node.position) Token.position PositionUndetermined node
 
-    static member endPosition node = Node.walkCata (List.last >> Node.endPosition) Token.endPosition (1, 1) node
+    static member endPosition node = Node.walkCata (List.last >> Node.endPosition) Token.endPosition PositionUndetermined node
 
     static member getChildren node = Node.walkCata id (fun _ -> []) [] node
 
@@ -245,7 +245,7 @@ with
                 let newToken = Token.withPosition nextPosition token
                 ReplaceableTokenNode newToken, Token.endPosition newToken
 
-        let newTree, _ = rebuildCata' (1, 1) tree
+        let newTree, _ = rebuildCata' (At (0, 1, 1)) tree
         newTree
 
     /// Updates the line and column of all tokens in a tree.

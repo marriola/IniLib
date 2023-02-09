@@ -346,7 +346,7 @@ let add options sectionName keyName value config =
     let replace sectionName keyName value =
         // Single key already exists, replace value and existing text nodes
         let section = dic.[sectionName]
-        let keyNodes = section.GetNodes(keyName)
+        let keyNodes = section.GetNodes keyName
         let target =
             keyNodes
             |> List.last
@@ -502,7 +502,7 @@ let addComment commentPosition options targetNode text (Configuration (tree, _) 
                         |> List.filter (Node.isNotComment)
                         |> Node.splitTrailingWhitespace (Node.endsWith options "\n")
                     let lastNodeText = targetChildren |> List.last |> Node.toText options
-                    let space = if String.endsWith " " lastNodeText || String.endsWith "\t" lastNodeText then [] else [ NodeBuilder.spaceTrivia() ]
+                    let space = if String.endsWith " " lastNodeText || String.endsWith "\t" lastNodeText then [] else [ NodeBuilder.spaceTrivia ]
                     let nextTargetNode =
                         targetNode
                         |> Node.withChildren (targetChildren @ space @ [ commentNode ])
@@ -560,13 +560,13 @@ let renameSection options sectionName newName config =
 let renameKey options sectionName keyName newKeyName config =
     // Get the section
     let (Configuration (tree, dic)) = config
-    let sectionNodes = dic.GetNodes sectionName
+    let sectionNodes = List.rev (dic.GetNodes sectionName)
 
     // Replace key name in each matching section node and rebuild configuration
     let newTree =
         (tree, sectionNodes)
         ||> List.fold (fun tree sectionNode ->
-            let children = Node.getChildren sectionNode
+            let children = sectionNode |> Node.getChildren |> List.rev
             let newText = [ NodeBuilder.replaceableText newKeyName ]
 
             // Replace name in matching keys
@@ -666,19 +666,19 @@ let private reformatKeys options (RootNode children) =
                 let keyNameNode =
                     let leftWhitespace =
                         match options.nameValueDelimiterSpacingRule with
-                        | BothSides | LeftOnly -> [ NodeBuilder.spaceTrivia() ]
+                        | BothSides | LeftOnly -> [ NodeBuilder.spaceTrivia ]
                         | _ -> []
                     let keyNameNodeStripped, _ = Node.splitTrailingWhitespace Operators.giveTrue keyNameChildren
                     let node = KeyNameNode (name, keyNameNodeStripped @ leftWhitespace)
                     if options.nameValueDelimiterRule = NoDelimiter then NodeBuilder.sanitize options node else node
                 let assignmentNode =
                     match preferredAssignmentChar with
-                    | Some c -> [ TokenNode (Assignment (c, 0, 0)) ]
+                    | Some c -> [ TokenNode (Assignment (c, PositionUndetermined)) ]
                     | None -> []
                 let keyValueNode =
                     let rightWhitespace =
                         match options.nameValueDelimiterSpacingRule with
-                        | BothSides | RightOnly -> [ NodeBuilder.spaceTrivia() ]
+                        | BothSides | RightOnly -> [ NodeBuilder.spaceTrivia ]
                         | _ -> []
                     let keyValueNodeStripped, _ = Node.splitLeadingWhitespace Operators.giveTrue keyValueChildren
                     let node = KeyValueNode (value, rightWhitespace @ keyValueNodeStripped)
@@ -691,7 +691,7 @@ let private reformatKeys options (RootNode children) =
                 | KeyNode (name, value, (KeyNameNode _ as keyNameNode)::(KeyValueNode _ as keyValueNode)::rest) as keyNode ->
                     convertKey name value None keyNode keyNameNode keyValueNode rest
 
-                | KeyNode (name, value, (KeyNameNode _ as keyNameNode)::(TokenNode (Assignment (c, _, _)))::(KeyValueNode _ as keyValueNode)::rest) as keyNode ->
+                | KeyNode (name, value, (KeyNameNode _ as keyNameNode)::(TokenNode (Assignment (c, _)))::(KeyValueNode _ as keyValueNode)::rest) as keyNode ->
                     convertKey name value (Some c) keyNode keyNameNode keyValueNode rest
 
                 | node ->

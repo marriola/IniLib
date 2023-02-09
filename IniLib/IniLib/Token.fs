@@ -3,17 +3,17 @@
 open IniLib.Utilities
 
 type Token =
-    | LeftBracket of line: int * column: int
-    | RightBracket of line: int * column: int
-    | Assignment of symbol: char * line: int * column: int
-    | Quote of line: int * column: int
-    | CommentIndicator of symbol: char * line: int * column: int
-    | Comment of text: string * line: int * column: int
-    | LineContinuation of line: int * column: int
-    | EscapedChar of char: char * line: int * column: int
-    | EscapedUnicodeChar of codepoint: int * line: int * column: int
-    | Text of text: string * line: int * column: int
-    | Whitespace of text: string * line: int * column: int
+    | LeftBracket of position: Position
+    | RightBracket of position: Position
+    | Assignment of symbol: char * position: Position
+    | Quote of position: Position
+    | CommentIndicator of symbol: char * position: Position
+    | Comment of text: string * position: Position
+    | LineContinuation of position: Position
+    | EscapedChar of char: char * position: Position
+    | EscapedUnicodeChar of codepoint: int * position: Position
+    | Text of text: string * position: Position
+    | Whitespace of text: string * position: Position
 with
     override this.ToString () =
         let escapeControlChars = String.replace "\r" "\\r" >> String.replace "\n" "\\n"
@@ -21,28 +21,37 @@ with
         match this with
         | LeftBracket _ -> "LeftBracket '['"
         | RightBracket _ -> "RightBracket ']'"
-        | Assignment (symbol, _, _) -> $"Assignment '{symbol}'"
+        | Assignment (symbol, _) -> $"Assignment '{symbol}'"
         | Quote _ -> "Quote '\"'"
-        | CommentIndicator (symbol, _, _) -> $"CommentIndicator '{symbol}'"
-        | Comment (text, _, _) -> $"Comment '{escapeControlChars text}'"
+        | CommentIndicator (symbol, _) -> $"CommentIndicator '{symbol}'"
+        | Comment (text, _) -> $"Comment '{escapeControlChars text}'"
         | LineContinuation _ -> "LineContinuation '\\'"
-        | EscapedChar (c, _, _) -> $"EscapedChar '\\{c}'"
-        | EscapedUnicodeChar (codepoint, _, _) -> $"EscapedUnicodeChar '\\x%04x{codepoint}'"
-        | Text (text, _, _) -> $"Text '{text}'"
-        | Whitespace (text, _, _) -> $"Whitespace '{escapeControlChars text}'"
+        | EscapedChar (c, _) -> $"EscapedChar '\\{c}'"
+        | EscapedUnicodeChar (codepoint, _) -> $"EscapedUnicodeChar '\\x%04x{codepoint}'"
+        | Text (text, _) -> $"Text '{text}'"
+        | Whitespace (text, _) -> $"Whitespace '{escapeControlChars text}'"
 
 and Position =
-    | Position of line: int * column: int
+    | PositionUndetermined
+    | At of offset: int * line: int * column: int
 with
-    override this.ToString() =
-        match this with
-        | Position (line, column) -> sprintf "line %d, column %d" line column
+    static member internal Start = At (0, 1, 1)
 
-    static member (+) (Position (line1, column1), (line2: int, column2: int)) =
-        Position (line1 + line2, column1 + column2)
+    static member inline private ``match`` fn p =
+        match p with
+        | At (offset, line, column) -> fn (offset, line, column)
+        | PositionUndetermined -> failwith $"Invalid token {p}"
+
+    static member inline toTuple p = p |> Position.``match`` id
+
+    static member incrementLine p = p |> Position.``match`` (fun (offset, line, _) -> At (offset + 1, line + 1, 1))
+
+    static member incrementColumn p = p |> Position.``match`` (fun (offset, line, column) -> At (offset + 1, line, column + 1))
+
+    override this.ToString() = this |> Position.``match`` (fun (_, line, column) -> $"line {line}, column {column}")
 
 module Token =
-    let private escapeCharacters = (*Map.ofList*) [
+    let private escapeCharacters = [
         '\\', '\\'
         '0', '\u0000'
         'a', '\a'
@@ -83,87 +92,94 @@ module Token =
             | LeftBracket _ -> "["
             | RightBracket _ -> "]"
             | Quote _ -> "\""
-            | Assignment (symbol, _, _)
-            | CommentIndicator (symbol, _, _) ->
+            | Assignment (symbol, _)
+            | CommentIndicator (symbol, _) ->
                 string symbol
-            | Comment (text, _, _) 
-            | Text (text, _, _)
-            | Whitespace (text, _, _) ->
+            | Comment (text, _) 
+            | Text (text, _)
+            | Whitespace (text, _) ->
                 text
             | LineContinuation _ -> "\\"
-            | EscapedChar (c, _, _) ->
+            | EscapedChar (c, _) ->
                 match options.escapeSequenceRule with
                 | IgnoreEscapeSequences -> c |> string
                 | _ -> $"\\{c}"
-            | EscapedUnicodeChar (codepoint, _, _) ->
+            | EscapedUnicodeChar (codepoint, _) ->
                 match options.escapeSequenceRule with
                 | IgnoreEscapeSequences -> codepoint |> char |> string
                 | _ -> $"\x%04x{codepoint}"
 
     let toTextToken token =
         match token with
-        | LeftBracket (line, column) -> Text ("[", line, column)
-        | RightBracket (line, column) -> Text ("]", line, column)
-        | Assignment (c, line, column) -> Text (string c, line, column)
+        | LeftBracket position -> Text ("[", position)
+        | RightBracket position -> Text ("]", position)
+        | Assignment (c, position) -> Text (string c, position)
 
     let endsWith options substring token =
         token
         |> toText options
         |> String.endsWith substring
 
-    let withPosition (line, column) token =
+    let withPosition position token =
         match token with
-        | LeftBracket _ -> LeftBracket (line, column)
-        | RightBracket _ -> RightBracket (line, column)
-        | Assignment (symbol, _, _) -> Assignment (symbol, line, column)
-        | Quote _ -> Quote (line, column)
-        | CommentIndicator (symbol, _, _) -> CommentIndicator (symbol, line, column)
-        | Comment (text, _, _) -> Comment (text, line, column)
-        | LineContinuation _ -> LineContinuation (line, column)
-        | EscapedChar (c, _, _) -> EscapedChar (c, line, column)
-        | EscapedUnicodeChar (codepoint, _, _) -> EscapedUnicodeChar (codepoint, line, column)
-        | Text (text, _, _) -> Text (text, line, column)
-        | Whitespace (text, _, _) -> Whitespace (text, line, column)
+        | LeftBracket _ -> LeftBracket position
+        | RightBracket _ -> RightBracket position
+        | Assignment (symbol, _) -> Assignment (symbol, position)
+        | Quote _ -> Quote position
+        | CommentIndicator (symbol, _) -> CommentIndicator (symbol, position)
+        | Comment (text, _) -> Comment (text, position)
+        | LineContinuation _ -> LineContinuation position
+        | EscapedChar (c, _) -> EscapedChar (c, position)
+        | EscapedUnicodeChar (codepoint, _) -> EscapedUnicodeChar (codepoint, position)
+        | Text (text, _) -> Text (text, position)
+        | Whitespace (text, _) -> Whitespace (text, position)
 
     let position token =
         match token with
-        | LeftBracket (line, column)
-        | RightBracket (line, column)
-        | Assignment (_, line, column)
-        | Quote (line, column)
-        | CommentIndicator (_, line, column)
-        | Comment (_, line, column)
-        | LineContinuation (line, column)
-        | EscapedChar (_, line, column)
-        | EscapedUnicodeChar (_, line, column)
-        | Text (_, line, column)
-        | Whitespace (_, line, column) ->
-            line, column
+        | LeftBracket position
+        | RightBracket position
+        | Assignment (_, position)
+        | Quote position
+        | CommentIndicator (_, position)
+        | Comment (_, position)
+        | LineContinuation position
+        | EscapedChar (_, position)
+        | EscapedUnicodeChar (_, position)
+        | Text (_, position)
+        | Whitespace (_, position) ->
+            position
+            //match position with
+            //| At (offset, line, column) -> offset, line, column
 
     let endPosition token =
-        match token with
-        | LeftBracket (line, column)
-        | RightBracket (line, column)
-        | Assignment (_, line, column)
-        | Quote (line, column)
-        | CommentIndicator (_, line, column)
-        | LineContinuation (line, column) ->
-            line, column + 1
-        | EscapedChar (_, line, column) ->
-            line, column + 2
-        | EscapedUnicodeChar (_, line, column) ->
-            line, column + 6
-        | Comment (text, line, column)
-        | Text (text, line, column)
-        | Whitespace (text, line, column) ->
-            let lineOffset =
-                text
-                |> Array.ofSeq
-                |> Array.filter ((=) '\n')
-                |> Array.length
-            let columnOffset =
-                if lineOffset > 0 then
-                    text.Length - (text.LastIndexOf('\n'))
-                else
-                    column + text.Length
-            (line + lineOffset, columnOffset)
+        let offset, line, column = token |> position |> Position.toTuple
+
+        let endOffset, endLine, endColumn =
+            match token with
+            | LeftBracket _
+            | RightBracket _
+            | Assignment (_, _)
+            | Quote _
+            | CommentIndicator (_, _)
+            | LineContinuation _ ->
+                offset + 1, line, column + 1
+            | EscapedChar (_, _) ->
+                offset + 2, line, column + 2
+            | EscapedUnicodeChar (_, _) ->
+                offset + 6, line, column + 6
+            | Comment (text, _)
+            | Text (text, _)
+            | Whitespace (text, _) ->
+                let lineOffset =
+                    text
+                    |> Array.ofSeq
+                    |> Array.filter ((=) '\n')
+                    |> Array.length
+                let columnOffset =
+                    if lineOffset > 0 then
+                        text.Length - (text.LastIndexOf('\n'))
+                    else
+                        column + text.Length
+                (offset + text.Length, line + lineOffset, columnOffset)
+
+        At (endOffset, endLine, endColumn)

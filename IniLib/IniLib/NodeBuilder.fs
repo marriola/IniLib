@@ -5,12 +5,12 @@ open IniLib.Utilities
 
 let private RE_WHITESPACE = new Regex("\\s")
 let private RE_ESCAPE_CHARACTERS = new Regex(@"[\b\f\n\r\t\v]" +                // Control characters
-                                             @"|(?<!\\)[x""'#:;= ]" +           // Unescaped special characters
+                                             @"|(?<!\\)[""'#:;= ]" +            // Unescaped special characters
                                              @"|\\(?![\b\f\n\r\t\vx""'#:;= ])") // Unescaped slash
 
-let inline newlineTrivia options = TriviaNode (Whitespace (options.newlineRule.toText(), 0, 0))
-let inline spaceTrivia () = TriviaNode (Whitespace (" ", 0, 0))
-let inline replaceableText text = ReplaceableTokenNode (Text (text, 0, 0))
+let inline newlineTrivia options = TriviaNode (Whitespace (options.newlineRule.toText(), PositionUndetermined))
+let inline replaceableText text = ReplaceableTokenNode (Text (text, PositionUndetermined))
+let spaceTrivia = TriviaNode (Whitespace (" ", PositionUndetermined))
 
 let addNewlineIfNeeded options node =
     if String.endsWith "\n" (Node.toText options node) then
@@ -47,7 +47,7 @@ let private quoteNode constructor node text children =
         let prologue = children |> List.takeWhile Node.isNotReplaceable
         let nameText = children |> List.filter Node.isReplaceable
         let epilogue = children |> List.rev |> List.takeWhile Node.isNotReplaceable |> List.rev
-        let quote = [ ReplaceableTokenNode (Quote (0, 0)) ]
+        let quote = [ ReplaceableTokenNode (Quote PositionUndetermined) ]
         constructor (text, prologue @ quote @ nameText @ quote @ epilogue)
 
 /// Sanitizes the key name or value to prevent a parsing error. If the text contains a whitespace,
@@ -75,7 +75,7 @@ let sanitize options node =
 let keyName options name =
     let whitespace =
         match options.nameValueDelimiterSpacingRule with
-        | LeftOnly | BothSides -> [ spaceTrivia() ]
+        | LeftOnly | BothSides -> [ spaceTrivia ]
         | _ -> []
 
     KeyNameNode (name, replaceableText name :: whitespace)
@@ -84,7 +84,7 @@ let keyName options name =
 let keyValue options value =
     let whitespace =
         match options.nameValueDelimiterSpacingRule with
-        | RightOnly | BothSides -> [ spaceTrivia()]
+        | RightOnly | BothSides -> [ spaceTrivia ]
         | _ -> []
     let children = [
         whitespace
@@ -97,8 +97,8 @@ let keyValue options value =
 let key options name value =
     let assignmentToken =
         match options.nameValueDelimiterPreferenceRule with
-        | PreferEqualsDelimiter -> [ TokenNode (Assignment ('=', 0, 0)) ]
-        | PreferColonDelimiter -> [ TokenNode (Assignment (':', 0, 0)) ]
+        | PreferEqualsDelimiter -> [ TokenNode (Assignment ('=', PositionUndetermined)) ]
+        | PreferColonDelimiter -> [ TokenNode (Assignment (':', PositionUndetermined)) ]
         | PreferNoDelimiter -> []
 
     let children =
@@ -120,9 +120,9 @@ let section options name children =
         else
             let sectionHeadingNode =
                 [ SectionHeadingNode (name, [
-                    TokenNode (LeftBracket (0, 0))
+                    TokenNode (LeftBracket PositionUndetermined)
                     replaceableText name
-                    TokenNode (RightBracket (0, 0))
+                    TokenNode (RightBracket PositionUndetermined)
                     newlineTrivia options
                 ]) ]
             let newline = [ newlineTrivia options ]
@@ -136,7 +136,7 @@ let comment options text =
         | HashComments | HashAndSemicolonComments -> '#'
         | SemicolonComments -> ';'
     let children =
-        [ TokenNode (CommentIndicator (commentIndicator, 0, 0))
-          TriviaNode (Whitespace (" ", 0, 0))
-          ReplaceableTokenNode (Text (text, 0, 0)) ]
+        [ TokenNode (CommentIndicator (commentIndicator, PositionUndetermined))
+          TriviaNode (Whitespace (" ", PositionUndetermined))
+          ReplaceableTokenNode (Text (text, PositionUndetermined)) ]
     CommentNode (text, children)

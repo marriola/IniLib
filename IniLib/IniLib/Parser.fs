@@ -94,11 +94,11 @@ let parse (options: Options) tokens =
     let tryParseComment tokens =
         let rec tryParseComment' text consumedTokens tokens =
             match tokens with
-            | (Whitespace (t, _, _) as token)::rest
-            | (Comment (t, _, _) as token)::rest ->
+            | (Whitespace (t, _) as token)::rest
+            | (Comment (t, _) as token)::rest ->
                 let nextText = text + t
 
-                if nextText.EndsWith("\n") then
+                if nextText.EndsWith "\n" then
                     let nextNode = CommentNode (nextText.Trim(), List.rev (TriviaNode token :: consumedTokens))
                     Some nextNode, rest
                 else
@@ -111,7 +111,7 @@ let parse (options: Options) tokens =
         // Check the rest of the line to see if it has a comment
         let rec parseEpilogue consumedTokens tokens =
             match tokens with
-            | (Whitespace (text, _, _) as ws)::rest when not (text.EndsWith("\n")) ->
+            | (Whitespace (text, _) as ws)::rest when not (text.EndsWith "\n") ->
                 parseEpilogue (TriviaNode ws :: consumedTokens) rest
             | (CommentIndicator _ as t)::rest ->
                 true, (TokenNode t :: consumedTokens), rest
@@ -136,14 +136,14 @@ let parse (options: Options) tokens =
 
         let (|EscapedText|_|) token =
             match token with
-            | EscapedChar (c, line, column) ->
+            | EscapedChar (c, position) ->
                 if not (escapeCodeToCharacter.ContainsKey c) then
-                    failwith $"Invalid escape sequence \\{c} at {line}, {column}"
-                Some (string escapeCodeToCharacter[c], line, column)
-            | EscapedUnicodeChar (codepoint, line, column) ->
-                Some (codepoint |> char |> string, line, column)
-            | LineContinuation (line, column) ->
-                Some (options.newlineRule.toText(), line, column)
+                    failwith $"Invalid escape sequence \\{c} at {position}"
+                Some (string escapeCodeToCharacter[c], position)
+            | EscapedUnicodeChar (codepoint, position) ->
+                Some (codepoint |> char |> string, position)
+            | LineContinuation position ->
+                Some (options.newlineRule.toText(), position)
             | _ -> None
 
         let rec parseKeyName state =
@@ -163,8 +163,8 @@ let parse (options: Options) tokens =
                                     consumedTokens = TokenNode quoteToken :: state.consumedTokens }
 
             // Set the name
-            | None, (Text (text, _, _) as textToken)::rest
-            | None, (EscapedText (text, _, _) as textToken::rest) ->
+            | None, (Text (text, _) as textToken)::rest
+            | None, (EscapedText (text, _) as textToken::rest) ->
                 parseKeyName { state with
                                     input = rest
                                     text = Some text
@@ -180,7 +180,7 @@ let parse (options: Options) tokens =
                 failwith $"Expected text or {expectedAfterName}, got end of line at {Token.position whitespaceToken}"
 
             // Append escaped text to the already read name
-            | (Some name), (EscapedText (text, _, _) as textToken)::rest ->
+            | (Some name), (EscapedText (text, _) as textToken)::rest ->
                 let name = if state.isQuoted then name else name + text
                 parseKeyName { state with
                                     input = rest
@@ -188,8 +188,8 @@ let parse (options: Options) tokens =
                                     consumedTokens = TokenNode textToken :: state.consumedTokens }
 
             // Append whitespace and text to the already read name
-            | (Some name), (Text (text, _, _) as textToken)::rest
-            | (Some name), (Whitespace (text, _, _) as textToken)::rest ->
+            | (Some name), (Text (text, _) as textToken)::rest
+            | (Some name), (Whitespace (text, _) as textToken)::rest ->
                 let name = if state.isQuoted then name else name + text
                 parseKeyName { state with
                                     input = rest
@@ -260,7 +260,7 @@ let parse (options: Options) tokens =
 
             // Consume all whitespace up until the next newline
             let consumeWhitespace (consumedTokens, input: Token list) =
-                let whitespace = List.takeWhile (function Whitespace (text, _, _) when text.EndsWith "\n" -> true | _ -> false) input
+                let whitespace = List.takeWhile (function Whitespace (text, _) when text.EndsWith "\n" -> true | _ -> false) input
                 let rest = input[whitespace.Length..]
                 let consumedTokens = (whitespace |> List.rev |> List.map Node.ofToken) @ consumedTokens
                 consumedTokens, rest
@@ -283,8 +283,8 @@ let parse (options: Options) tokens =
                 | Quote _::_ when state.lastQuote <> None ->
                     terminate()
 
-                | Text (text, _, _)::_
-                | Whitespace (text, _, _)::_ when state.lastQuote = None && text.EndsWith("\n") ->
+                | Text (text, _)::_
+                | Whitespace (text, _)::_ when state.lastQuote = None && text.EndsWith "\n" ->
                     terminate()
 
                 | token::rest ->
@@ -311,14 +311,14 @@ let parse (options: Options) tokens =
                                     consumedTokens = TokenNode quoteToken :: state.consumedTokens }
 
             // Set value
-            | None, Text (text, _, _)::_
-            | None, EscapedText (text, _, _)::_ ->
+            | None, Text (text, _)::_
+            | None, EscapedText (text, _)::_ ->
                 matchValueText consumeNextToken text
 
             // Append text to value
-            | (Some value), (Text (text, _, _) as token)::rest
-            | (Some value), (Whitespace (text, _, _) as token)::rest
-            | (Some value), (EscapedText (text, _, _) as token)::rest ->
+            | (Some value), (Text (text, _) as token)::rest
+            | (Some value), (Whitespace (text, _) as token)::rest
+            | (Some value), (EscapedText (text, _) as token)::rest ->
                 if state.lastQuote <> None && List.isEmpty rest then
                     failwith $"Expected '\"', got end of file at {Token.endPosition token}"
 
@@ -396,8 +396,11 @@ let parse (options: Options) tokens =
 
     let rec parseSectionHeading parsedSections sectionName consumedTokens tokens =
         match tokens with
-        | (Text (text, _, _) as textToken)::rest
-        | (Whitespace (text, _, _) as textToken)::rest ->
+        | Whitespace (whitespace, position)::_ when whitespace.EndsWith "\n" ->
+            failwith $"Expected text or ']', got end of line at {position}"
+
+        | (Text (text, _) as textToken)::rest
+        | (Whitespace (text, _) as textToken)::rest ->
             let consumedTokens = TokenNode textToken :: consumedTokens
             parseSectionHeading parsedSections (sectionName + text) consumedTokens rest
 
@@ -411,7 +414,7 @@ let parse (options: Options) tokens =
             let nextLineIndex =
                 rest
                 |> List.tryFindIndex (function
-                    | Whitespace (text, _, _) when text.EndsWith("\n") -> true
+                    | Whitespace (text, _) when text.EndsWith "\n" -> true
                     | Whitespace _ -> false
                     | t -> failwith $"Expected whitespace or newline at {Token.position t}, got {t}")
 
@@ -425,10 +428,10 @@ let parse (options: Options) tokens =
             headingNode, sectionName, rest
 
         | [] ->
-            failwith $"Expected text or ']', got end of file ({Node.endPosition consumedTokens[0]})"
+            failwith $"Expected text or ']', got end of file at {Node.endPosition consumedTokens[0]}"
 
         | token::_ ->
-            failwith $"Expected text or ']', got {token} at ({Token.position token})"
+            failwith $"Expected text or ']', got {token} at {Token.position token}"
 
     let rec parseKeys parsedKeys outNodes tokens =
         let doesNotEndWithNewline = Node.toText options >> String.contains "\n" >> not
@@ -440,7 +443,7 @@ let parse (options: Options) tokens =
             List.rev outNodes, tokens
 
         // Consume whitespace and add trivia node
-        | Whitespace (text, _, _) as whitespaceToken::rest ->
+        | Whitespace (text, _) as whitespaceToken::rest ->
             let triviaNode = TriviaNode whitespaceToken
             parseKeys parsedKeys (triviaNode :: outNodes) rest
 
@@ -474,7 +477,7 @@ let parse (options: Options) tokens =
             let outNodes =
                 match options.duplicateKeyRule with
                 | DisallowDuplicateKeys when Set.contains keyName parsedKeys ->
-                    failwith $"Duplicate key '{keyName}' at %O{Node.position nextKey}"
+                    failwith $"Duplicate key '{keyName}' at {Node.position nextKey}"
 
                 | _ ->
                     nextKey :: outNodes
